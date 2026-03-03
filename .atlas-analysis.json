@@ -1,0 +1,121 @@
+{
+  "projectType": "saas",
+  "projectName": "Bİ DOLU İÇECEK",
+  "projectDescription": "A modern React-based water and beverage delivery e-commerce platform with WhatsApp ordering, cart management, and configurable service hours.",
+  "theme": "almond",
+  "primaryColor": "#3B82F6",
+  "lightColor": "#60A5FA",
+  "darkColor": "#1E40AF",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/product-catalog",
+              "features/shopping-cart",
+              "features/whatsapp-ordering",
+              "features/service-hours",
+              "features/multi-language"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/service-hours",
+              "configuration/order-limits",
+              "configuration/damacana-limits",
+              "configuration/whatsapp",
+              "configuration/edge-config"
+            ]
+          },
+          {
+            "group": "Components",
+            "pages": [
+              "components/overview",
+              "components/product-card",
+              "components/product-modal",
+              "components/order-button",
+              "components/cart-context"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Customization",
+            "pages": [
+              "guides/adding-products",
+              "guides/adding-images",
+              "guides/adding-videos",
+              "guides/styling"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "guides/building",
+              "guides/deployment"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Configuration APIs",
+            "pages": [
+              "api/service-hours",
+              "api/order-limits",
+              "api/damacana-limits",
+              "api/whatsapp"
+            ]
+          },
+          {
+            "group": "Components API",
+            "pages": [
+              "api/cart-context",
+              "api/language"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Product catalog with categories and sub-products",
+    "Shopping cart with quantity management",
+    "WhatsApp order integration",
+    "Configurable service hours with day/time restrictions",
+    "Minimum order amount validation",
+    "Damacana (water jug) time restrictions",
+    "Multi-language support (Turkish/English)",
+    "Real-time service status checking",
+    "Responsive mobile-first design",
+    "Edge Config integration for remote configuration"
+  ],
+  "publicApiSurface": [
+    "isServiceOpen()",
+    "getServiceHoursText()",
+    "validateOrderAmount(totalPrice)",
+    "getNextServiceTime()",
+    "checkCartForDamacana(items)",
+    "openWhatsApp(productName, message)",
+    "useCart() hook",
+    "toggleLanguage()",
+    "t(key, params)"
+  ]
+}
