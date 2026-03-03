@@ -1,0 +1,372 @@
+---
+title: 'Adding Images'
+description: 'Learn how to add and manage product images, logos, and visual assets'
+icon: 'image'
+---
+
+## Overview
+
+The Bİ DOLU İÇECEK application uses images for products, logos, and other visual elements. All images are stored in the `public/images/` directory and referenced using absolute paths.
+
+## Image Directory Structure
+
+Your project's image structure should look like this:
+
+```
+public/
+├── images/
+│   ├── logo.png              ← Company logo
+│   ├── fuska.jpeg            ← Main product images
+│   ├── pinar.jpeg
+│   ├── buzdagi.png
+│   ├── f19.png               ← Sub-product images
+│   ├── f1204.jpeg
+│   ├── p19d.png
+│   ├── video-poster.jpg      ← Video thumbnail (optional)
+│   └── ...
+└── videos/
+    └── tanitim-video.mp4
+```
+
+## Adding Product Images
+
+<Steps>
+  <Step title="Prepare your image">
+    Ensure your image meets these recommendations:
+
+    - **Format**: PNG, JPG, or JPEG
+    - **Size**: Maximum 1MB for fast loading
+    - **Resolution**: 800x800px recommended for products
+    - **Background**: Transparent PNG preferred for product shots
+  </Step>
+
+  <Step title="Place image in public/images/">
+    Copy your image file to the `public/images/` directory:
+
+    ```bash
+    # Example
+    cp ~/Downloads/my-product.png public/images/saka-19.png
+    ```
+  </Step>
+
+  <Step title="Reference in products.js">
+    Update the product's `image` field in `src/data/products.js`:
+
+    ```javascript src/data/products.js
+    {
+      id: 101,
+      name: "Saka Su 19Lt Damacana",
+      price: "150 TL",
+      image: "/images/saka-19.png",  // Your new image
+      imagePlaceholder: "🏺",
+      whatsappMessage: "..."
+    }
+    ```
+
+    <Note>
+    The path must start with `/images/` (not `public/images/`)
+    </Note>
+  </Step>
+
+  <Step title="Test the image">
+    Refresh your browser and verify the image displays correctly. If it doesn't load, check:
+
+    - File path is correct (case-sensitive)
+    - Image exists in `public/images/`
+    - No typos in filename
+  </Step>
+</Steps>
+
+## Image Formats and Best Practices
+
+### Supported Formats
+
+| Format | Use Case | Pros | Cons |
+|--------|----------|------|------|
+| **PNG** | Products with transparency | Lossless, supports transparency | Larger file size |
+| **JPG/JPEG** | Photos, complex images | Smaller file size | No transparency |
+| **SVG** | Logos, icons | Scalable, tiny file size | Not ideal for photos |
+
+### Recommended Sizes
+
+<Tip>
+Optimize images before adding them to reduce page load time.
+</Tip>
+
+**Main Product Cards** (Homepage)
+- Dimensions: 400x400px to 800x800px
+- Format: PNG with transparent background
+- Max size: 500KB
+
+**Sub-Product Cards** (Modal)
+- Dimensions: 300x300px to 600x600px
+- Format: PNG or JPG
+- Max size: 300KB
+
+**Logo**
+- Dimensions: 150-250px width, 40-60px height
+- Format: PNG with transparency
+- Max size: 100KB
+
+## Placeholder Emojis
+
+While images load or if they fail to load, the application shows emoji placeholders defined in `imagePlaceholder`.
+
+### Choosing Effective Emojis
+
+```javascript src/data/products.js
+// Water-related emojis
+imagePlaceholder: "💧"  // Water droplet
+imagePlaceholder: "🌊"  // Water wave
+imagePlaceholder: "💦"  // Splashing water
+
+// Container emojis
+imagePlaceholder: "🏺"  // Amphora/jug (damacana)
+imagePlaceholder: "🪣"  // Bucket
+imagePlaceholder: "🍼"  // Bottle
+imagePlaceholder: "🥤"  // Cup with straw
+
+// Premium/quality indicators
+imagePlaceholder: "💎"  // Diamond
+imagePlaceholder: "✨"  // Sparkles
+imagePlaceholder: "👑"  // Crown
+imagePlaceholder: "⭐"  // Star
+```
+
+### Example Usage from Codebase
+
+```javascript src/data/products.js
+{
+  id: 11,
+  name: "Fuska Su 19Lt Damacana",
+  price: "160 TL",
+  image: "/images/f19.png",
+  imagePlaceholder: "🏺",  // Jug emoji for damacana
+  // ...
+}
+```
+
+## Logo Setup
+
+The application displays a logo in the header's left section.
+
+### Adding Your Logo
+
+<Steps>
+  <Step title="Prepare logo file">
+    **Recommended specifications:**
+    - Format: PNG with transparent background
+    - Dimensions: 150-250px width × 40-60px height
+    - File name: `logo.png`
+    - Max size: 100KB
+  </Step>
+
+  <Step title="Place in public/images/">
+    ```bash
+    cp ~/Downloads/company-logo.png public/images/logo.png
+    ```
+  </Step>
+
+  <Step title="Verify in App.js">
+    The logo is referenced in `src/App.js` (line ~419 based on README):
+
+    ```javascript src/App.js
+    <img 
+      src="/images/logo.png"
+      alt="Bİ DOLU İÇECEK Logo" 
+      className="header-logo"
+    />
+    ```
+  </Step>
+
+  <Step title="Test logo display">
+    Refresh your browser. The logo should appear in the header.
+  </Step>
+</Steps>
+
+### Logo Fallback Behavior
+
+<Note>
+If the logo file is missing or fails to load, the application displays the text "Bİ DOLU İÇECEK" as a fallback.
+</Note>
+
+The fallback is managed in CSS:
+
+```css src/App.css
+.logo-fallback {
+  display: none; /* Hidden when logo exists */
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+```
+
+### Retina Display Support (Optional)
+
+For high-resolution displays, you can provide a 2x version:
+
+```
+public/images/
+├── logo.png       ← Standard resolution (200x50px)
+└── logo@2x.png    ← Retina resolution (400x100px)
+```
+
+## Image Optimization Tips
+
+### Compress Images
+
+Use online tools or CLI tools to reduce file size:
+
+```bash
+# Using ImageMagick
+convert input.png -quality 85 -resize 800x800 output.png
+
+# Using TinyPNG API or website
+# https://tinypng.com/
+```
+
+### Lazy Loading
+
+The application uses React's built-in image optimization. Images load as users scroll.
+
+### Image Loading States
+
+The `ProductImage` component handles three states:
+
+1. **Loading**: Shows placeholder emoji with gradient
+2. **Loaded**: Displays actual image
+3. **Error**: Falls back to placeholder emoji
+
+```javascript
+// From ProductImage component logic
+if (loading) return <PlaceholderEmoji />;
+if (error) return <PlaceholderEmoji />;
+return <img src={imagePath} alt={productName} />;
+```
+
+## Naming Conventions
+
+<Warning>
+Use consistent, descriptive filenames. Avoid spaces and special characters.
+</Warning>
+
+### Good Naming Examples
+
+```
+✓ fuska-19lt.png
+✓ pinar-su-24x05.jpeg
+✓ buzdagi-cam-15.png
+✓ logo-company.png
+```
+
+### Bad Naming Examples
+
+```
+✗ Fuska Su 19 LT.png        (spaces, capitals)
+✗ ürün-resmi.jpeg           (Turkish characters)
+✗ IMG_1234.jpg              (non-descriptive)
+✗ product (1).png           (parentheses)
+```
+
+### Product Image Naming Pattern
+
+Follow this pattern for consistency:
+
+```
+[brand-initial][size/variant].[extension]
+
+Examples:
+f19.png           → Fuska 19Lt
+f1204.jpeg        → Fuska 12x0.4Lt
+p19d.png          → Pınar 19Lt Damacana
+p15c.png          → Pınar 15Lt Cam
+buzdagi.png       → Buzdağı (main product)
+```
+
+## Common Image Issues
+
+### Image Not Displaying
+
+**Problem**: Image path is incorrect
+
+**Solution**: Check these:
+
+```javascript
+// ✗ Wrong paths
+image: "images/fuska.png"        // Missing leading slash
+image: "public/images/fuska.png" // Don't include "public"
+image: "./images/fuska.png"      // Don't use relative path
+
+// ✓ Correct path
+image: "/images/fuska.png"
+```
+
+### Image Stretched or Distorted
+
+The CSS uses `object-fit: contain` to prevent distortion:
+
+```css src/App.css
+.product-image img {
+  object-fit: contain !important;
+  object-position: center !important;
+}
+```
+
+If images still look stretched, check your source image dimensions.
+
+### Slow Loading
+
+**Problem**: Image files too large
+
+**Solution**: Compress images before adding:
+
+<Steps>
+  <Step title="Check file size">
+    ```bash
+    ls -lh public/images/
+    ```
+  </Step>
+
+  <Step title="Compress large files">
+    Files over 500KB should be compressed:
+    ```bash
+    # Use online tools or ImageMagick
+    convert large-image.png -quality 85 optimized.png
+    ```
+  </Step>
+
+  <Step title="Verify improvement">
+    Test page load speed in browser DevTools (Network tab)
+  </Step>
+</Steps>
+
+## Video Poster Images (Optional)
+
+For video modals, you can provide a poster image:
+
+```
+public/images/video-poster.jpg
+```
+
+Referenced in `VideoModal.js` (line 46):
+
+```javascript src/components/VideoModal.js
+<video
+  controls
+  autoPlay
+  className="video-modal-player"
+  poster="/images/video-poster.jpg"
+>
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Adding Products" icon="box" href="/guides/adding-products">
+    Learn how to add products that use these images
+  </Card>
+  <Card title="Adding Videos" icon="video" href="/guides/adding-videos">
+    Set up promotional videos for your application
+  </Card>
+</CardGroup>

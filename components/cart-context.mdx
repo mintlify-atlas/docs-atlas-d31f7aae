@@ -1,0 +1,676 @@
+---
+title: 'CartContext & useCart Hook'
+description: 'Global cart state management using React Context API with complete cart operations'
+icon: 'database'
+---
+
+## Overview
+
+The `CartContext` provides centralized state management for the shopping cart using React's Context API and useReducer hook. It offers a complete set of cart operations accessible throughout the application via the `useCart()` hook.
+
+## Component Location
+
+**File**: `src/context/CartContext.js`
+
+## Architecture
+
+The cart system uses the **Reducer Pattern** for predictable state updates:
+
+```
+CartProvider (Context Provider)
+  ├── useReducer(cartReducer, initialState)
+  ├── Action Creators (addItem, removeItem, clearCart)
+  ├── Selectors (getTotalItems, getTotalPrice, getItemQuantity)
+  └── Helper Functions (getCartMessage)
+```
+
+## Installation
+
+### 1. Wrap App with CartProvider
+
+```javascript App.js
+import React from 'react';
+import { CartProvider } from './context/CartContext';
+import ProductCard from './components/ProductCard';
+import OrderButton from './components/OrderButton';
+
+function App() {
+  return (
+    <CartProvider>
+      <div className="App">
+        {/* All components can now access cart */}
+        <ProductCard product={product} />
+        <OrderButton />
+      </div>
+    </CartProvider>
+  );
+}
+
+export default App;
+```
+
+<Warning>
+All components that need cart access **must** be children of `CartProvider`. Using `useCart()` outside the provider will throw an error.
+</Warning>
+
+### 2. Access Cart in Components
+
+```javascript
+import { useCart } from '../context/CartContext';
+
+function MyComponent() {
+  const { addItem, getTotalItems, getTotalPrice } = useCart();
+  
+  // Use cart methods...
+}
+```
+
+## State Structure
+
+### Initial State
+
+```javascript
+const initialState = {
+  items: []
+};
+```
+
+### Cart Item Structure
+
+When items are added to cart, they have this structure:
+
+```typescript
+type CartItem = {
+  id: string;           // Unique item identifier (e.g., "11", "12")
+  name: string;         // Item name (e.g., "19L Damacana")
+  price: string;        // Price with currency (e.g., "25 TL")
+  quantity: number;     // Number of items in cart
+  image?: string;       // Item image URL
+  imagePlaceholder?: string; // Emoji fallback
+};
+```
+
+### Example State
+
+```javascript
+{
+  items: [
+    { id: "11", name: "19L Damacana", price: "25 TL", quantity: 2 },
+    { id: "12", name: "5L Pet Şişe", price: "15 TL", quantity: 1 },
+    { id: "21", name: "Kola 1L", price: "20 TL", quantity: 3 }
+  ]
+}
+```
+
+## Cart Reducer
+
+The reducer handles three action types:
+
+### Action Types
+
+<ParamField path="ADD_ITEM" type="action">
+  Adds an item to cart or increments quantity if already exists
+  
+  ```javascript
+  dispatch({ type: 'ADD_ITEM', payload: item })
+  ```
+</ParamField>
+
+<ParamField path="REMOVE_ITEM" type="action">
+  Decrements item quantity or removes item if quantity is 1
+  
+  ```javascript
+  dispatch({ type: 'REMOVE_ITEM', payload: item })
+  ```
+</ParamField>
+
+<ParamField path="CLEAR_CART" type="action">
+  Removes all items from cart
+  
+  ```javascript
+  dispatch({ type: 'CLEAR_CART' })
+  ```
+</ParamField>
+
+### Reducer Implementation
+
+```javascript
+const cartReducer = (state, action) => {
+  switch (action.type) {
+    case 'ADD_ITEM':
+      const existingItem = state.items.find(item => item.id === action.payload.id);
+      if (existingItem) {
+        // Increment quantity
+        return {
+          ...state,
+          items: state.items.map(item =>
+            item.id === action.payload.id
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          )
+        };
+      } else {
+        // Add new item with quantity 1
+        return {
+          ...state,
+          items: [...state.items, { ...action.payload, quantity: 1 }]
+        };
+      }
+
+    case 'REMOVE_ITEM':
+      const item = state.items.find(item => item.id === action.payload.id);
+      if (item && item.quantity > 1) {
+        // Decrement quantity
+        return {
+          ...state,
+          items: state.items.map(item =>
+            item.id === action.payload.id
+              ? { ...item, quantity: item.quantity - 1 }
+              : item
+          )
+        };
+      } else {
+        // Remove item completely
+        return {
+          ...state,
+          items: state.items.filter(item => item.id !== action.payload.id)
+        };
+      }
+
+    case 'CLEAR_CART':
+      return {
+        ...state,
+        items: []
+      };
+
+    default:
+      return state;
+  }
+};
+```
+
+## useCart Hook API
+
+The `useCart()` hook provides access to cart state and operations:
+
+### Context Value
+
+```javascript
+const value = {
+  items,              // Array of cart items
+  addItem,            // Function to add item
+  removeItem,         // Function to remove item
+  clearCart,          // Function to clear cart
+  getItemQuantity,    // Function to get item quantity
+  getTotalItems,      // Function to get total items count
+  getTotalPrice,      // Function to get total price
+  getCartMessage      // Function to get WhatsApp message
+};
+```
+
+### Methods
+
+<ParamField path="items" type="array">
+  Array of all items currently in the cart
+  
+  ```javascript
+  const { items } = useCart();
+  console.log(items); // [{ id: "11", name: "...", quantity: 2 }, ...]
+  ```
+</ParamField>
+
+<ParamField path="addItem" type="function">
+  Adds an item to cart or increments quantity
+  
+  ```javascript
+  addItem(item: CartItem) => void
+  
+  // Example:
+  const { addItem } = useCart();
+  addItem({
+    id: "11",
+    name: "19L Damacana",
+    price: "25 TL",
+    image: "/images/damacana.png"
+  });
+  ```
+</ParamField>
+
+<ParamField path="removeItem" type="function">
+  Removes one unit of an item or deletes if quantity is 1
+  
+  ```javascript
+  removeItem(item: CartItem) => void
+  
+  // Example:
+  const { removeItem } = useCart();
+  removeItem({ id: "11" });
+  ```
+</ParamField>
+
+<ParamField path="clearCart" type="function">
+  Removes all items from cart
+  
+  ```javascript
+  clearCart() => void
+  
+  // Example:
+  const { clearCart } = useCart();
+  clearCart();
+  ```
+</ParamField>
+
+<ParamField path="getItemQuantity" type="function">
+  Returns quantity of a specific item in cart
+  
+  ```javascript
+  getItemQuantity(itemId: string) => number
+  
+  // Example:
+  const { getItemQuantity } = useCart();
+  const quantity = getItemQuantity("11"); // Returns 2 if 2 items in cart
+  ```
+</ParamField>
+
+<ParamField path="getTotalItems" type="function">
+  Returns total number of items across all products
+  
+  ```javascript
+  getTotalItems() => number
+  
+  // Example:
+  const { getTotalItems } = useCart();
+  const total = getTotalItems(); // Returns 5 for [qty:2, qty:1, qty:2]
+  ```
+</ParamField>
+
+<ParamField path="getTotalPrice" type="function">
+  Calculates total price of all items in cart
+  
+  ```javascript
+  getTotalPrice() => number
+  
+  // Example:
+  const { getTotalPrice } = useCart();
+  const total = getTotalPrice(); // Returns 85.0
+  ```
+  
+  **Price Calculation Logic**:
+  - Extracts numeric value from price string ("25 TL" → 25)
+  - Handles comma decimal separators ("25,50 TL" → 25.5)
+  - Multiplies by quantity
+  - Sums all items
+</ParamField>
+
+<ParamField path="getCartMessage" type="function">
+  Generates formatted message for WhatsApp orders
+  
+  ```javascript
+  getCartMessage() => string
+  
+  // Example:
+  const { getCartMessage } = useCart();
+  const message = getCartMessage();
+  // Returns:
+  // "2 adet - 19L Damacana
+  // 1 adet - 5L Pet Şişe
+  // sipariş etmek istiyorum."
+  ```
+</ParamField>
+
+## Usage Examples
+
+### Adding Items to Cart
+
+```javascript SubProductCard.js
+import { useCart } from '../context/CartContext';
+
+function SubProductCard({ subProduct }) {
+  const { addItem, getItemQuantity } = useCart();
+  const quantity = getItemQuantity(subProduct.id);
+
+  const handleAddToCart = () => {
+    addItem(subProduct);
+  };
+
+  return (
+    <div>
+      <h4>{subProduct.name}</h4>
+      <p>{subProduct.price}</p>
+      <button onClick={handleAddToCart}>Add to Cart</button>
+      {quantity > 0 && <span>Quantity: {quantity}</span>}
+    </div>
+  );
+}
+```
+
+### Displaying Cart Summary
+
+```javascript CartSummary.js
+import { useCart } from '../context/CartContext';
+
+function CartSummary() {
+  const { getTotalItems, getTotalPrice, items } = useCart();
+
+  return (
+    <div className="cart-summary">
+      <h3>Your Cart</h3>
+      <p>Total Items: {getTotalItems()}</p>
+      <p>Total Price: {getTotalPrice().toFixed(2)} TL</p>
+      
+      <ul>
+        {items.map(item => (
+          <li key={item.id}>
+            {item.quantity}x {item.name} - {item.price}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+### Quantity Controls
+
+```javascript QuantityControls.js
+import { useCart } from '../context/CartContext';
+
+function QuantityControls({ item }) {
+  const { addItem, removeItem, getItemQuantity } = useCart();
+  const quantity = getItemQuantity(item.id);
+
+  if (quantity === 0) return null;
+
+  return (
+    <div className="quantity-controls">
+      <button onClick={() => removeItem(item)}>−</button>
+      <span>{quantity}</span>
+      <button onClick={() => addItem(item)}>+</button>
+    </div>
+  );
+}
+```
+
+### Clearing Cart After Order
+
+```javascript OrderButton.js
+import { useCart } from '../context/CartContext';
+import { openWhatsApp } from '../config/whatsapp';
+
+function OrderButton() {
+  const { getCartMessage, clearCart, getTotalItems } = useCart();
+
+  const handleOrder = () => {
+    const message = getCartMessage();
+    openWhatsApp('Order', message);
+    clearCart(); // Clear cart after successful order
+  };
+
+  if (getTotalItems() === 0) return null;
+
+  return (
+    <button onClick={handleOrder}>
+      Place Order
+    </button>
+  );
+}
+```
+
+## Price Calculation Details
+
+The `getTotalPrice()` method handles Turkish Lira formatting:
+
+```javascript
+const getTotalPrice = () => {
+  return state.items.reduce((total, item) => {
+    // Extract number from price string
+    // "25 TL" → 25
+    // "25,50 TL" → 25.5
+    const price = parseFloat(
+      item.price
+        .replace(/[^\d,.-]/g, '')  // Remove non-numeric except comma/dot
+        .replace(',', '.')          // Convert comma to dot for decimal
+    ) || 0;
+    
+    return total + (price * item.quantity);
+  }, 0);
+};
+```
+
+### Supported Price Formats
+
+- `"25 TL"` → 25.00
+- `"25.50 TL"` → 25.50
+- `"25,50 TL"` → 25.50
+- `"25TL"` → 25.00
+
+<Tip>
+The price parser is flexible and handles both dot and comma decimal separators, making it compatible with Turkish and international number formats.
+</Tip>
+
+## WhatsApp Message Format
+
+The `getCartMessage()` method generates order messages:
+
+```javascript
+const getCartMessage = () => {
+  if (state.items.length === 0) return '';
+  
+  const itemMessages = state.items.map(item => 
+    `${item.quantity} adet - ${item.name}`
+  );
+  
+  return `${itemMessages.join('\n')}\nsipariş etmek istiyorum.`;
+};
+```
+
+### Example Output
+
+```
+2 adet - 19L Damacana
+1 adet - 5L Pet Şişe
+3 adet - Kola 1L
+sipariş etmek istiyorum.
+```
+
+## Error Handling
+
+The `useCart` hook validates context usage:
+
+```javascript
+export const useCart = () => {
+  const context = useContext(CartContext);
+  
+  if (!context) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
+  
+  return context;
+};
+```
+
+<Warning>
+Always ensure your components are wrapped in `CartProvider`. Using `useCart()` outside the provider will throw this error.
+</Warning>
+
+## Complete Source Code
+
+```javascript src/context/CartContext.js
+import React, { createContext, useContext, useReducer } from 'react';
+
+const CartContext = createContext();
+
+const cartReducer = (state, action) => {
+  switch (action.type) {
+    case 'ADD_ITEM':
+      const existingItem = state.items.find(item => item.id === action.payload.id);
+      if (existingItem) {
+        return {
+          ...state,
+          items: state.items.map(item =>
+            item.id === action.payload.id
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          )
+        };
+      } else {
+        return {
+          ...state,
+          items: [...state.items, { ...action.payload, quantity: 1 }]
+        };
+      }
+
+    case 'REMOVE_ITEM':
+      const item = state.items.find(item => item.id === action.payload.id);
+      if (item && item.quantity > 1) {
+        return {
+          ...state,
+          items: state.items.map(item =>
+            item.id === action.payload.id
+              ? { ...item, quantity: item.quantity - 1 }
+              : item
+          )
+        };
+      } else {
+        return {
+          ...state,
+          items: state.items.filter(item => item.id !== action.payload.id)
+        };
+      }
+
+    case 'CLEAR_CART':
+      return {
+        ...state,
+        items: []
+      };
+
+    default:
+      return state;
+  }
+};
+
+const initialState = {
+  items: []
+};
+
+export const CartProvider = ({ children }) => {
+  const [state, dispatch] = useReducer(cartReducer, initialState);
+
+  const addItem = (item) => {
+    dispatch({ type: 'ADD_ITEM', payload: item });
+  };
+
+  const removeItem = (item) => {
+    dispatch({ type: 'REMOVE_ITEM', payload: item });
+  };
+
+  const clearCart = () => {
+    dispatch({ type: 'CLEAR_CART' });
+  };
+
+  const getItemQuantity = (itemId) => {
+    const item = state.items.find(item => item.id === itemId);
+    return item ? item.quantity : 0;
+  };
+
+  const getTotalItems = () => {
+    return state.items.reduce((total, item) => total + item.quantity, 0);
+  };
+
+  const getTotalPrice = () => {
+    return state.items.reduce((total, item) => {
+      const price = parseFloat(item.price.replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
+      return total + (price * item.quantity);
+    }, 0);
+  };
+
+  const getCartMessage = () => {
+    if (state.items.length === 0) return '';
+    
+    const itemMessages = state.items.map(item => 
+      `${item.quantity} adet - ${item.name}`
+    );
+    
+    return `${itemMessages.join('\n')}\nsipariş etmek istiyorum.`;
+  };
+
+  const value = {
+    items: state.items,
+    addItem,
+    removeItem,
+    clearCart,
+    getItemQuantity,
+    getTotalItems,
+    getTotalPrice,
+    getCartMessage
+  };
+
+  return (
+    <CartContext.Provider value={value}>
+      {children}
+    </CartContext.Provider>
+  );
+};
+
+export const useCart = () => {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
+  return context;
+};
+```
+
+## Best Practices
+
+<Tip>
+**Single Source of Truth**: All cart state lives in CartContext. Never duplicate cart state in individual components.
+</Tip>
+
+<Tip>
+**Immutable Updates**: The reducer always returns new objects/arrays, never mutating existing state.
+</Tip>
+
+<Tip>
+**Clear After Order**: Always call `clearCart()` after successful order placement to prevent duplicate orders.
+</Tip>
+
+<Warning>
+Never directly modify the `items` array. Always use the provided methods (`addItem`, `removeItem`, `clearCart`).
+</Warning>
+
+## Performance Considerations
+
+- **Reducer Pattern**: Ensures predictable state updates
+- **Context Optimization**: Only re-renders components that consume context
+- **Selector Functions**: Compute derived values (totals) on demand
+
+## Testing Example
+
+```javascript CartContext.test.js
+import { renderHook, act } from '@testing-library/react-hooks';
+import { CartProvider, useCart } from '../context/CartContext';
+
+const wrapper = ({ children }) => <CartProvider>{children}</CartProvider>;
+
+test('should add item to cart', () => {
+  const { result } = renderHook(() => useCart(), { wrapper });
+  
+  act(() => {
+    result.current.addItem({
+      id: '11',
+      name: '19L Damacana',
+      price: '25 TL'
+    });
+  });
+  
+  expect(result.current.getTotalItems()).toBe(1);
+  expect(result.current.getTotalPrice()).toBe(25);
+});
+```
+
+## Related Components
+
+- [OrderButton](/components/order-button) - Uses cart for order placement
+- [ProductModal](/components/product-modal) - Adds items to cart
+- [ProductCard](/components/product-card) - Triggers product selection

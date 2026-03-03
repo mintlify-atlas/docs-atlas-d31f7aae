@@ -1,0 +1,606 @@
+---
+title: 'ProductModal Component'
+description: 'Full-screen modal for displaying sub-products with cart integration and quantity controls'
+icon: 'window-maximize'
+---
+
+## Overview
+
+The `ProductModal` component displays a full-screen modal overlay that shows all sub-product options for a selected product. Users can add items to cart, adjust quantities, and see special restrictions like damacana time limits.
+
+## Component Location
+
+**File**: `src/components/ProductModal.js`
+
+## Props
+
+<ParamField path="product" type="object" required>
+  Product object containing product details and sub-products
+  
+  <Expandable title="Product structure">
+    <ParamField path="product.id" type="string">
+      Product identifier
+    </ParamField>
+    
+    <ParamField path="product.name" type="string">
+      Product name displayed in modal header
+    </ParamField>
+    
+    <ParamField path="product.imagePlaceholder" type="string">
+      Emoji or icon displayed in modal header (e.g., "💧", "🥤")
+    </ParamField>
+    
+    <ParamField path="product.subProducts" type="array" required>
+      Array of sub-product objects to display in the modal
+      
+      <Expandable title="SubProduct structure">
+        <ParamField path="id" type="string" required>
+          Unique sub-product identifier (e.g., "11", "12")
+        </ParamField>
+        
+        <ParamField path="name" type="string" required>
+          Sub-product name (e.g., "19L Damacana", "5L Pet")
+        </ParamField>
+        
+        <ParamField path="price" type="string" required>
+          Price with currency (e.g., "25 TL", "15 TL")
+        </ParamField>
+        
+        <ParamField path="image" type="string">
+          Sub-product image URL
+        </ParamField>
+        
+        <ParamField path="imagePlaceholder" type="string">
+          Fallback emoji when image unavailable
+        </ParamField>
+      </Expandable>
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="isOpen" type="boolean" required>
+  Controls modal visibility. When `true`, modal is displayed.
+</ParamField>
+
+<ParamField path="onClose" type="function" required>
+  Callback function triggered when user closes the modal (via backdrop click or close button)
+  
+  ```javascript
+  onClose: () => void
+  ```
+</ParamField>
+
+## Usage Example
+
+### Basic Implementation
+
+```javascript
+import React, { useState } from 'react';
+import ProductModal from './components/ProductModal';
+
+function App() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  const product = {
+    id: '1',
+    name: 'Su',
+    imagePlaceholder: '💧',
+    subProducts: [
+      {
+        id: '11',
+        name: '19L Damacana',
+        price: '25 TL',
+        image: '/images/damacana.png',
+        imagePlaceholder: '💧'
+      },
+      {
+        id: '12',
+        name: '5L Pet Şişe',
+        price: '15 TL',
+        image: '/images/5l.png',
+        imagePlaceholder: '💧'
+      }
+    ]
+  };
+
+  return (
+    <>
+      <button onClick={() => setIsModalOpen(true)}>
+        Ürün Seçeneklerini Gör
+      </button>
+      
+      <ProductModal 
+        product={product}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+    </>
+  );
+}
+```
+
+### With ProductCard Integration
+
+```javascript
+const ProductCard = ({ product }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  return (
+    <>
+      <div onClick={() => setIsModalOpen(true)} className="product-card">
+        <ProductImage src={product.image} alt={product.name} />
+        <h3>{product.name}</h3>
+        <p>{product.price}</p>
+      </div>
+
+      <ProductModal 
+        product={product}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+    </>
+  );
+};
+```
+
+## Modal Structure
+
+The modal consists of three main sections:
+
+### 1. Modal Header
+
+Displays product information and close button:
+
+```jsx
+<div className="modal-header">
+  <div className="modal-header-container">
+    <div className="modal-header-info">
+      <div className="modal-header-icon">
+        <span>{product.imagePlaceholder}</span>
+      </div>
+      <div className="modal-header-text">
+        <h2>{product.name}</h2>
+        <p>{t('productDescription')}</p>
+      </div>
+    </div>
+    
+    <button onClick={handleCloseClick} className="modal-close-btn">
+      <span>‹</span>
+    </button>
+  </div>
+</div>
+```
+
+### 2. Modal Body (Sub-Products Grid)
+
+Displays sub-products in a responsive grid:
+
+```jsx
+<div className="modal-body">
+  <div className="modal-body-container">
+    <div className="modal-grid">
+      {product.subProducts?.map((subProduct) => (
+        <SubProductCard 
+          key={subProduct.id} 
+          subProduct={subProduct} 
+        />
+      ))}
+    </div>
+  </div>
+</div>
+```
+
+### 3. Modal Footer
+
+Provides user guidance:
+
+```jsx
+<div className="modal-footer">
+  <div className="modal-footer-container">
+    <p>💬 Ürüne tıklayarak WhatsApp ile sipariş verebilirsiniz</p>
+  </div>
+</div>
+```
+
+## SubProductCard Component
+
+Each sub-product is rendered with its own card that integrates with the cart:
+
+### Cart Integration
+
+```javascript
+const SubProductCard = ({ subProduct }) => {
+  const { addItem, removeItem, getItemQuantity } = useCart();
+  const quantity = getItemQuantity(subProduct.id);
+  
+  // ... component implementation
+};
+```
+
+### Damacana Restrictions
+
+Sub-products with ID ending in "1" (damacana) are subject to time restrictions:
+
+```javascript
+const isDamacanaProduct = isDamacana(subProduct.id);
+const damacanaCheck = isDamacanaProduct ? isDamacanaOrderAllowed() : { isAllowed: true };
+
+const isDamacanaDisabled = isDamacanaProduct && !damacanaCheck.isAllowed;
+```
+
+**Damacana Rules** (from `src/config/damacanaLimits.js:4-30`):
+- **Cutoff Time**: 19:00 (orders not accepted after)
+- **Start Time**: 08:30 (orders accepted from)
+- **Pattern**: Product IDs ending in "1" (11, 21, 31, etc.)
+
+### Quantity Controls
+
+When items are in cart, quantity controls appear:
+
+```jsx
+{quantity > 0 && (
+  <div className="quantity-controls">
+    <button onClick={handleRemoveFromCart} className="quantity-btn minus-btn">
+      −
+    </button>
+    <span className="quantity-display">{quantity}</span>
+    <button onClick={handleAddToCart} className="quantity-btn plus-btn">
+      +
+    </button>
+  </div>
+)}
+```
+
+### Add to Cart Button
+
+For items not in cart:
+
+```jsx
+{quantity === 0 && !isDamacanaDisabled && (
+  <button onClick={handleAddToCart} className="add-to-cart-btn">
+    {t('addToCart')}
+  </button>
+)}
+```
+
+### Damacana Warning
+
+Shown when damacana orders are restricted:
+
+```jsx
+{isDamacanaDisabled && (
+  <div className="damacana-warning">
+    🕐 {damacanaCheck.message}
+  </div>
+)}
+```
+
+## Modal Closing Behavior
+
+The modal can be closed in two ways:
+
+### 1. Backdrop Click
+
+```javascript
+const handleBackdropClick = (e) => {
+  if (e.target === e.currentTarget) {
+    onClose();
+  }
+};
+```
+
+<Tip>
+Backdrop clicking only closes the modal if the click target is the backdrop itself, preventing accidental closes when clicking modal content.
+</Tip>
+
+### 2. Close Button Click
+
+```javascript
+const handleCloseClick = () => {
+  onClose();
+};
+```
+
+## Cart Operations
+
+### Adding Items
+
+```javascript
+const handleAddToCart = (e) => {
+  e.stopPropagation();
+  
+  // Check damacana restrictions
+  if (isDamacanaProduct && !damacanaCheck.isAllowed) {
+    return;
+  }
+  
+  addItem(subProduct);
+};
+```
+
+### Removing Items
+
+```javascript
+const handleRemoveFromCart = (e) => {
+  e.stopPropagation();
+  removeItem(subProduct);
+};
+```
+
+### Card Click to Add
+
+Clicking the entire card adds one item:
+
+```javascript
+const handleCardClick = () => {
+  if (isDamacanaProduct && !damacanaCheck.isAllowed) {
+    return;
+  }
+  addItem(subProduct);
+};
+```
+
+## Accessibility Features
+
+### Keyboard Support
+
+```jsx
+onKeyDown={isDamacanaDisabled ? undefined : (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    handleCardClick();
+  }
+}}
+```
+
+### ARIA Labels
+
+```jsx
+aria-label={
+  isDamacanaDisabled 
+    ? `${subProduct.name} - ${damacanaCheck.message}`
+    : `${subProduct.name} ${t('addToCart')}`
+}
+```
+
+### Tab Index Management
+
+```jsx
+tabIndex={isDamacanaDisabled ? -1 : 0}
+```
+
+<Warning>
+Disabled damacana products have `tabIndex={-1}` to prevent keyboard navigation to unavailable items.
+</Warning>
+
+## Styling
+
+### Full-Screen Modal
+
+```css
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
+.modal-content {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: white;
+  overflow-y: auto;
+}
+```
+
+### Responsive Grid
+
+```css
+.modal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem;
+}
+```
+
+### Disabled State
+
+```css
+.sub-product-card-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(50%);
+}
+```
+
+## Internationalization
+
+The modal supports multiple languages:
+
+```javascript
+import { t } from '../config/language';
+
+// Translations used:
+t('productDescription') // "Lütfen bir seçenek seçin" / "Please select an option"
+t('addToCart')          // "Sepete Ekle" / "Add to Cart"
+```
+
+## Complete Source Code
+
+```javascript src/components/ProductModal.js
+import React from 'react';
+import { useCart } from '../context/CartContext';
+import { isDamacana, isDamacanaOrderAllowed } from '../config/damacanaLimits';
+import ProductImage from './ProductImage';
+import { t } from '../config/language';
+
+const SubProductCard = ({ subProduct }) => {
+  const { addItem, removeItem, getItemQuantity } = useCart();
+  const quantity = getItemQuantity(subProduct.id);
+  const isDamacanaProduct = isDamacana(subProduct.id);
+  const damacanaCheck = isDamacanaProduct ? isDamacanaOrderAllowed() : { isAllowed: true };
+
+  const handleAddToCart = (e) => {
+    e.stopPropagation();
+    if (isDamacanaProduct && !damacanaCheck.isAllowed) {
+      return;
+    }
+    addItem(subProduct);
+  };
+
+  const handleRemoveFromCart = (e) => {
+    e.stopPropagation();
+    removeItem(subProduct);
+  };
+
+  const handleCardClick = () => {
+    if (isDamacanaProduct && !damacanaCheck.isAllowed) {
+      return;
+    }
+    addItem(subProduct);
+  };
+
+  const isDamacanaDisabled = isDamacanaProduct && !damacanaCheck.isAllowed;
+
+  return (
+    <div 
+      className={`sub-product-card ${isDamacanaDisabled ? 'sub-product-card-disabled' : ''}`}
+      onClick={isDamacanaDisabled ? undefined : handleCardClick}
+      role="button"
+      tabIndex={isDamacanaDisabled ? -1 : 0}
+      onKeyDown={isDamacanaDisabled ? undefined : (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleCardClick();
+        }
+      }}
+      aria-label={
+        isDamacanaDisabled 
+          ? `${subProduct.name} - ${damacanaCheck.message}`
+          : `${subProduct.name} ${t('addToCart')}`
+      }
+    >
+      <div className="sub-product-image">
+        <ProductImage 
+          src={subProduct.image}
+          alt={`${subProduct.name} resmi`}
+          placeholder={subProduct.imagePlaceholder}
+          className="sub-product-image-placeholder"
+        />
+      </div>
+      
+      <h4 className="sub-product-name">{subProduct.name}</h4>
+      <div className="sub-product-price">{subProduct.price}</div>
+      
+      {quantity > 0 && (
+        <div className="quantity-controls">
+          <button onClick={handleRemoveFromCart} className="quantity-btn minus-btn">
+            −
+          </button>
+          <span className="quantity-display">{quantity}</span>
+          <button onClick={handleAddToCart} className="quantity-btn plus-btn">
+            +
+          </button>
+        </div>
+      )}
+      
+      {quantity === 0 && !isDamacanaDisabled && (
+        <button onClick={handleAddToCart} className="add-to-cart-btn">
+          {t('addToCart')}
+        </button>
+      )}
+      
+      {isDamacanaDisabled && (
+        <div className="damacana-warning">
+          🕐 {damacanaCheck.message}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ProductModal = ({ product, isOpen, onClose }) => {
+  if (!isOpen || !product) return null;
+
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  const handleCloseClick = () => {
+    onClose();
+  };
+
+  return (
+    <div className="modal-overlay" onClick={handleBackdropClick}>
+      <div className="modal-backdrop"></div>
+      
+      <div className="modal-content">
+        <div className="modal-header">
+          <div className="modal-header-container">
+            <div className="modal-header-info">
+              <div className="modal-header-icon">
+                <span>{product.imagePlaceholder}</span>
+              </div>
+              <div className="modal-header-text">
+                <h2>{product.name}</h2>
+                <p>{t('productDescription')}</p>
+              </div>
+            </div>
+            
+            <button onClick={handleCloseClick} className="modal-close-btn">
+              <span>‹</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="modal-body">
+          <div className="modal-body-container">
+            <div className="modal-grid">
+              {product.subProducts?.map((subProduct) => (
+                <SubProductCard 
+                  key={subProduct.id} 
+                  subProduct={subProduct} 
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="modal-footer">
+          <div className="modal-footer-container">
+            <p>💬 Ürüne tıklayarak WhatsApp ile sipariş verebilirsiniz</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProductModal;
+```
+
+## Best Practices
+
+<Tip>
+**Event Propagation**: Always use `e.stopPropagation()` in button click handlers to prevent triggering the card's click handler.
+</Tip>
+
+<Tip>
+**Conditional Rendering**: The modal returns `null` when closed, removing it from the DOM completely for better performance.
+</Tip>
+
+<Warning>
+Always check damacana restrictions before allowing add-to-cart actions to comply with business rules.
+</Warning>
+
+## Related Components
+
+- [ProductCard](/components/product-card) - Opens ProductModal
+- [CartContext](/components/cart-context) - Manages cart state
+- [OrderButton](/components/order-button) - Displays cart total and order button

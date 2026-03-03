@@ -1,0 +1,352 @@
+---
+title: 'WhatsApp Configuration'
+description: 'Configure WhatsApp integration for customer communication and product inquiries'
+---
+
+## Overview
+
+The WhatsApp configuration enables direct communication with customers via WhatsApp. This includes setting up your business phone number, customizing message templates, and providing utility functions for creating WhatsApp links.
+
+## Configuration File
+
+WhatsApp settings are defined in `src/config/whatsapp.js:3-15`.
+
+## Configuration Options
+
+<ParamField path="phoneNumber" type="string" default="905303099887">
+  WhatsApp business phone number with country code (without `+` symbol)
+  
+  **Format:** Country code + phone number (e.g., `905303099887` for Turkey)
+  
+  <Warning>
+    Do not include the `+` symbol. Use only digits.
+  </Warning>
+</ParamField>
+
+<ParamField path="defaultMessage" type="string" default="Merhaba, {productName} sipariş etmek istiyorum.">
+  Default message template used when no product-specific template exists
+  
+  Use `{productName}` placeholder to insert the product name dynamically.
+</ParamField>
+
+<ParamField path="productMessages" type="object" default="{}">
+  Product-specific message templates keyed by product name
+  
+  Example:
+  ```javascript
+  {
+    "abc su": "Merhaba! ABC Su ürününüz hakkında detaylı bilgi alabilir miyim?"
+  }
+  ```
+</ParamField>
+
+## Usage Examples
+
+### Create WhatsApp URL
+
+```javascript src/config/whatsapp.js
+import { createWhatsAppURL } from '@/config/whatsapp';
+
+// Using default message template
+const url1 = createWhatsAppURL('ABC Su 19L Damacana');
+// Returns: "https://wa.me/905303099887?text=Merhaba%2C%20ABC%20Su%2019L%20Damacana%20sipari%C5%9F%20etmek%20istiyorum."
+
+// Using custom message
+const url2 = createWhatsAppURL(
+  'ABC Su 19L Damacana',
+  'Bu ürünün fiyatı nedir ve ne zaman teslim alabilir miyim?'
+);
+
+// Using product-specific template (if configured)
+const url3 = createWhatsAppURL('abc su');
+// Uses the custom message from productMessages["abc su"]
+```
+
+### Open WhatsApp in New Tab
+
+```javascript src/config/whatsapp.js
+import { openWhatsApp } from '@/config/whatsapp';
+
+// Open WhatsApp chat with default message
+function handleContactClick(productName) {
+  openWhatsApp(productName);
+}
+
+// Open WhatsApp chat with custom message
+function handleCustomInquiry(productName) {
+  const message = `${productName} için toplu sipariş vermek istiyorum. Fiyat bilgisi alabilir miyim?`;
+  openWhatsApp(productName, message);
+}
+```
+
+### React Component Example
+
+```jsx
+import { openWhatsApp, WHATSAPP_CONFIG } from '@/config/whatsapp';
+import { FaWhatsapp } from 'react-icons/fa';
+
+function ProductCard({ product }) {
+  const handleWhatsAppClick = () => {
+    openWhatsApp(
+      product.name,
+      `${product.name} ürününü sipariş etmek istiyorum. Stokta var mı?`
+    );
+  };
+  
+  return (
+    <div className="product-card">
+      <h3>{product.name}</h3>
+      <p>{product.price} TL</p>
+      
+      <button 
+        onClick={handleWhatsAppClick}
+        className="whatsapp-button"
+      >
+        <FaWhatsapp /> WhatsApp ile İletişim
+      </button>
+    </div>
+  );
+}
+```
+
+## Configuration Examples
+
+### Basic Setup
+
+```javascript src/config/whatsapp.js
+export const WHATSAPP_CONFIG = {
+  phoneNumber: "905303099887",
+  defaultMessage: "Merhaba, {productName} sipariş etmek istiyorum.",
+  productMessages: {}
+};
+```
+
+### With Product-Specific Messages
+
+```javascript src/config/whatsapp.js
+export const WHATSAPP_CONFIG = {
+  phoneNumber: "905303099887",
+  defaultMessage: "Merhaba, {productName} sipariş etmek istiyorum.",
+  productMessages: {
+    "abc su": "Merhaba! ABC Su ürününüz hakkında detaylı bilgi alabilir miyim? Fiyat ve teslimat koşulları nelerdir?",
+    "damacana 19l": "19L damacana sipariş etmek istiyorum. Boş damacana getirmem gerekiyor mu?",
+    "pet su 0.5l": "Merhaba, pet su kolisi sipariş vermek istiyorum. Minimum sipariş adedi nedir?"
+  }
+};
+```
+
+### Multiple Languages
+
+```javascript src/config/whatsapp.js
+export const WHATSAPP_CONFIG = {
+  phoneNumber: "905303099887",
+  defaultMessage: "Hello, I would like to order {productName}.",
+  productMessages: {
+    // English messages
+    "mineral water": "Hello! Could you provide details about this mineral water product?",
+    
+    // Turkish messages
+    "maden suyu": "Merhaba! Bu maden suyu ürününüz hakkında detay alabilir miyim?"
+  }
+};
+```
+
+## Function Reference
+
+### createWhatsAppURL()
+
+Creates a WhatsApp Web URL with pre-filled message.
+
+```typescript
+function createWhatsAppURL(
+  productName: string,
+  customMessage?: string | null
+): string
+```
+
+**Parameters:**
+- `productName` - Name of the product for message template
+- `customMessage` - Optional custom message (overrides templates)
+
+**Returns:** Full WhatsApp URL with encoded message
+
+**Logic (see `src/config/whatsapp.js:18-25`):**
+1. If `customMessage` provided, use it
+2. Else if product-specific message exists in `productMessages`, use it
+3. Else use `defaultMessage` with `{productName}` placeholder replaced
+4. URL-encode the message and append to `https://wa.me/{phoneNumber}`
+
+### openWhatsApp()
+
+Opens WhatsApp chat in a new browser tab.
+
+```typescript
+function openWhatsApp(
+  productName: string,
+  customMessage?: string | null
+): void
+```
+
+**Parameters:**
+- `productName` - Name of the product for message template
+- `customMessage` - Optional custom message (overrides templates)
+
+**Behavior (see `src/config/whatsapp.js:28-31`):**
+- Opens URL in new tab with `noopener,noreferrer` for security
+- Calls `createWhatsAppURL()` internally
+
+## WhatsApp URL Format
+
+The generated URLs follow WhatsApp's official format:
+
+```
+https://wa.me/{phoneNumber}?text={encodedMessage}
+```
+
+**Example:**
+```
+https://wa.me/905303099887?text=Merhaba%2C%20ABC%20Su%20sipari%C5%9F%20etmek%20istiyorum.
+```
+
+<Info>
+  Messages are automatically URL-encoded using `encodeURIComponent()` to handle special characters and Turkish characters correctly.
+</Info>
+
+## Security Considerations
+
+The `openWhatsApp()` function uses secure window opening:
+
+```javascript src/config/whatsapp.js
+window.open(url, '_blank', 'noopener,noreferrer');
+```
+
+<Card title="Security Features" icon="shield">
+  - `noopener` - Prevents new window from accessing `window.opener`
+  - `noreferrer` - Prevents referrer information from being sent
+  - Protects against reverse tabnabbing attacks
+</Card>
+
+## Testing WhatsApp Links
+
+To test WhatsApp integration:
+
+<Steps>
+  <Step title="Get Test URL">
+    Use `createWhatsAppURL()` to generate a test link:
+    ```javascript
+    const url = createWhatsAppURL('Test Product');
+    console.log(url);
+    ```
+  </Step>
+  
+  <Step title="Open in Browser">
+    Copy the URL and open it in your browser. You should be redirected to WhatsApp Web or mobile app.
+  </Step>
+  
+  <Step title="Verify Message">
+    Check that the pre-filled message appears correctly in the chat input.
+  </Step>
+  
+  <Step title="Test on Mobile">
+    Test on mobile devices to ensure the WhatsApp app opens (not just web).
+  </Step>
+</Steps>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Business Number" icon="phone">
+    Use an official WhatsApp Business account for professional appearance and features.
+  </Card>
+  
+  <Card title="Message Templates" icon="message">
+    Create templates that provide context and make it easy for your team to respond.
+  </Card>
+  
+  <Card title="Product Information" icon="box">
+    Include key product details in messages (size, price range) to speed up customer service.
+  </Card>
+  
+  <Card title="Response Time" icon="clock">
+    Set customer expectations about when they'll receive a reply via WhatsApp.
+  </Card>
+</CardGroup>
+
+## Common Use Cases
+
+### Product Inquiry Button
+
+```jsx
+import { openWhatsApp } from '@/config/whatsapp';
+
+<button onClick={() => openWhatsApp(product.name)}>
+  WhatsApp ile Sor
+</button>
+```
+
+### Out of Stock Contact
+
+```jsx
+import { openWhatsApp } from '@/config/whatsapp';
+
+function OutOfStock({ productName }) {
+  const handleContact = () => {
+    openWhatsApp(
+      productName,
+      `${productName} ürünü ne zaman stoğa girecek? Bilgi alabilir miyim?`
+    );
+  };
+  
+  return (
+    <div className="out-of-stock">
+      <p>Stokta yok</p>
+      <button onClick={handleContact}>Stoğa Girince Haber Ver</button>
+    </div>
+  );
+}
+```
+
+### Bulk Order Inquiry
+
+```jsx
+import { openWhatsApp } from '@/config/whatsapp';
+
+function BulkOrderButton({ productName }) {
+  const message = `Toplu sipariş vermek istiyorum (${productName}). Özel fiyat alabilir miyim?`;
+  
+  return (
+    <button onClick={() => openWhatsApp(productName, message)}>
+      Toplu Sipariş için İletişime Geç
+    </button>
+  );
+}
+```
+
+## Localization
+
+For multi-language support, consider exporting message templates:
+
+```javascript src/config/whatsapp.js
+export const MESSAGES = {
+  tr: {
+    default: "Merhaba, {productName} sipariş etmek istiyorum.",
+    outOfStock: "{productName} ne zaman stoğa girecek?",
+    bulkOrder: "Toplu sipariş için fiyat bilgisi alabilir miyim?"
+  },
+  en: {
+    default: "Hello, I would like to order {productName}.",
+    outOfStock: "When will {productName} be back in stock?",
+    bulkOrder: "Can I get pricing for bulk orders?"
+  }
+};
+
+export const getLocalizedMessage = (key, productName, locale = 'tr') => {
+  const template = MESSAGES[locale]?.[key] || MESSAGES.tr[key];
+  return template.replace('{productName}', productName);
+};
+```
+
+## Related Configuration
+
+- [Service Hours](/configuration/service-hours) - When WhatsApp support is available
+- [Order Limits](/configuration/order-limits) - Include minimum order info in messages

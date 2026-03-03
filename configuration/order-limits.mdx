@@ -1,0 +1,261 @@
+---
+title: 'Order Limits Configuration'
+description: 'Configure minimum and maximum order amounts with validation messages'
+---
+
+## Overview
+
+The order limits configuration allows you to set minimum and maximum order amounts for your water delivery service. This helps ensure order profitability and manage delivery logistics.
+
+## Configuration File
+
+Order limits are defined in `src/config/orderLimits.js:2-17`.
+
+## Configuration Options
+
+<ParamField path="minimumOrderAmount" type="number" default="400">
+  Minimum order amount in Turkish Lira (TL)
+  
+  Orders below this amount will be rejected during checkout.
+</ParamField>
+
+<ParamField path="minimumOrderEnabled" type="boolean" default="true">
+  Enable or disable minimum order validation
+  
+  Set to `false` to allow orders of any amount.
+</ParamField>
+
+<ParamField path="minimumOrderMessage" type="string" default="Minimum sepet tutarı {minimumOrderAmount} TL'dir">
+  Error message shown when order is below minimum amount
+  
+  Use `{minimumOrderAmount}` placeholder to display the configured amount.
+  
+  **Note:** The placeholder in code is `{amount}` but displays as `{minimumOrderAmount}` in the actual message template.
+</ParamField>
+
+<ParamField path="maximumOrderAmount" type="number | null" default="null">
+  Maximum order amount in Turkish Lira (TL)
+  
+  Set to `null` for no maximum limit.
+</ParamField>
+
+<ParamField path="maximumOrderMessage" type="string" default="Maksimum sipariş tutarı {amount} TL'dir">
+  Error message shown when order exceeds maximum amount
+  
+  Use `{amount}` placeholder to display the configured maximum.
+</ParamField>
+
+## Usage Examples
+
+### Validate Order Amount
+
+```javascript src/config/orderLimits.js
+import { validateOrderAmount } from '@/config/orderLimits';
+
+const totalPrice = 350; // User's cart total
+
+const validation = validateOrderAmount(totalPrice);
+
+if (!validation.isValid) {
+  // Show error to user
+  alert(validation.message); // "Minimum sepet tutarı 400 TL'dir"
+} else {
+  // Proceed with checkout
+  console.log('Order amount is valid');
+}
+```
+
+### Check Minimum Order Only
+
+```javascript src/config/orderLimits.js
+import { checkMinimumOrder } from '@/config/orderLimits';
+
+const result = checkMinimumOrder(450);
+
+console.log(result);
+// {
+//   isValid: true,
+//   message: null
+// }
+
+const result2 = checkMinimumOrder(300);
+console.log(result2);
+// {
+//   isValid: false,
+//   message: "Minimum sepet tutarı 400 TL'dir"
+// }
+```
+
+### Check Maximum Order Only
+
+```javascript src/config/orderLimits.js
+import { checkMaximumOrder } from '@/config/orderLimits';
+
+const result = checkMaximumOrder(5000);
+
+console.log(result);
+// {
+//   isValid: true,  // No maximum set by default
+//   message: null
+// }
+```
+
+## Configuration Examples
+
+### Standard Minimum Order
+
+```javascript src/config/orderLimits.js
+export const ORDER_LIMITS = {
+  minimumOrderAmount: 400,
+  minimumOrderEnabled: true,
+  minimumOrderMessage: "Minimum sepet tutarı {amount} TL'dir",
+  maximumOrderAmount: null,
+  maximumOrderMessage: "Maksimum sipariş tutarı {amount} TL'dir"
+};
+```
+
+### With Maximum Limit
+
+```javascript src/config/orderLimits.js
+export const ORDER_LIMITS = {
+  minimumOrderAmount: 400,
+  minimumOrderEnabled: true,
+  minimumOrderMessage: "Minimum sepet tutarı {amount} TL'dir",
+  maximumOrderAmount: 10000, // Limit large orders
+  maximumOrderMessage: "Maksimum sipariş tutarı {amount} TL'dir"
+};
+```
+
+### No Minimum Requirement
+
+```javascript src/config/orderLimits.js
+export const ORDER_LIMITS = {
+  minimumOrderAmount: 0,
+  minimumOrderEnabled: false, // Disable minimum check
+  minimumOrderMessage: "Minimum sepet tutarı {amount} TL'dir",
+  maximumOrderAmount: null,
+  maximumOrderMessage: "Maksimum sipariş tutarı {amount} TL'dir"
+};
+```
+
+### Custom Messages
+
+```javascript src/config/orderLimits.js
+export const ORDER_LIMITS = {
+  minimumOrderAmount: 500,
+  minimumOrderEnabled: true,
+  minimumOrderMessage: "Üzgünüz, minimum {amount} TL tutarında sipariş verebilirsiniz. Kargo ücreti nedeniyle bu politikayı uyguluyoruz.",
+  maximumOrderAmount: 15000,
+  maximumOrderMessage: "Toplu siparişler için lütfen {amount} TL'nin altında kalın veya bizi arayın: 0530 309 98 87"
+};
+```
+
+## Validation Logic
+
+The validation system works as follows (see `src/config/orderLimits.js:52-64`):
+
+<Steps>
+  <Step title="Check Minimum">
+    First, `checkMinimumOrder()` is called. If minimum is enabled and order is below the threshold, validation fails with the minimum message.
+  </Step>
+  
+  <Step title="Check Maximum">
+    If minimum passes, `checkMaximumOrder()` is called. If a maximum is set and order exceeds it, validation fails with the maximum message.
+  </Step>
+  
+  <Step title="Return Result">
+    Returns an object with `isValid` boolean and optional error `message`.
+  </Step>
+</Steps>
+
+## Return Value Structure
+
+All validation functions return the same structure:
+
+```typescript
+{
+  isValid: boolean,    // true if order amount is acceptable
+  message: string | null  // Error message if invalid, null if valid
+}
+```
+
+## Message Placeholders
+
+<Warning>
+  There's an inconsistency in the placeholder naming:
+  - `minimumOrderMessage` template uses `{minimumOrderAmount}` in the default
+  - But the code replaces `{amount}` (see `src/config/orderLimits.js:28`)
+  - `maximumOrderMessage` uses `{amount}` consistently
+  
+  Both work, but be aware when customizing messages.
+</Warning>
+
+## Integration Example
+
+Here's how to integrate order validation in a checkout flow:
+
+```javascript
+import { validateOrderAmount, ORDER_LIMITS } from '@/config/orderLimits';
+import { useState } from 'react';
+
+function CheckoutButton({ cartTotal, onCheckout }) {
+  const [error, setError] = useState(null);
+  
+  const handleCheckout = () => {
+    const validation = validateOrderAmount(cartTotal);
+    
+    if (!validation.isValid) {
+      setError(validation.message);
+      return;
+    }
+    
+    setError(null);
+    onCheckout();
+  };
+  
+  return (
+    <div>
+      {error && (
+        <div className="error-message">
+          {error}
+        </div>
+      )}
+      
+      {ORDER_LIMITS.minimumOrderEnabled && cartTotal < ORDER_LIMITS.minimumOrderAmount && (
+        <div className="info-message">
+          {ORDER_LIMITS.minimumOrderAmount - cartTotal} TL daha ekleyin
+        </div>
+      )}
+      
+      <button onClick={handleCheckout}>
+        Siparişi Tamamla ({cartTotal} TL)
+      </button>
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Set Realistic Minimums" icon="scale-balanced">
+    Balance profitability with customer accessibility. Too high minimum orders may lose customers.
+  </Card>
+  
+  <Card title="Clear Messaging" icon="message">
+    Customize error messages to explain why limits exist (e.g., delivery costs, logistics).
+  </Card>
+  
+  <Card title="Show Progress" icon="chart-line">
+    Display how much more customers need to add to reach minimum order.
+  </Card>
+  
+  <Card title="Consider Regions" icon="map">
+    You may want different limits for different delivery areas in the future.
+  </Card>
+</CardGroup>
+
+## Related Configuration
+
+- [Service Hours](/configuration/service-hours) - Control when orders can be placed
+- [Damacana Limits](/configuration/damacana-limits) - Special time restrictions for water jugs

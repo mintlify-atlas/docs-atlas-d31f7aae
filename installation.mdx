@@ -1,0 +1,213 @@
+---
+title: Installation
+description: Install and set up Bİ DOLU İÇECEK water delivery platform on your local machine
+---
+
+# Installation Guide
+
+This guide will walk you through setting up the Bİ DOLU İÇECEK application on your local development environment.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed on your system:
+
+<Note>
+  The application requires Node.js to run the development server and build the production bundle.
+</Note>
+
+### Required Software
+
+- **Node.js**: Version 14.x or higher recommended
+- **npm**: Comes bundled with Node.js (version 6.x or higher)
+- **Git**: For cloning the repository
+
+### Verify Installation
+
+Check your Node.js and npm versions:
+
+```bash
+node --version
+npm --version
+```
+
+## Installation Steps
+
+<Steps>
+  <Step title="Clone the Repository">
+    Clone the project repository to your local machine:
+
+    ```bash
+    git clone [repo-url]
+    cd suapp
+    ```
+
+    <Note>
+      Replace `[repo-url]` with the actual repository URL provided by your team.
+    </Note>
+  </Step>
+
+  <Step title="Install Dependencies">
+    Install all required npm packages:
+
+    ```bash
+    npm install
+    ```
+
+    This will install the following key dependencies:
+
+    **Core Dependencies:**
+    - `react@19.1.1` - React library
+    - `react-dom@19.1.1` - React DOM renderer
+    - `react-scripts@5.0.1` - Create React App scripts
+
+    **Styling:**
+    - `tailwindcss@4.1.12` - Utility-first CSS framework
+    - `autoprefixer@10.4.21` - PostCSS plugin for vendor prefixes
+    - `postcss@8.5.6` - CSS transformation tool
+
+    **Configuration:**
+    - `@vercel/edge-config@1.4.0` - Remote configuration management
+
+    **Testing:**
+    - `@testing-library/react@16.3.0` - React testing utilities
+    - `@testing-library/jest-dom@6.8.0` - Jest DOM matchers
+  </Step>
+
+  <Step title="Environment Configuration (Optional)">
+    The application uses Edge Config for dynamic configuration management. If you need to set up Edge Config:
+
+    Create a `.env` file in the root directory:
+
+    ```bash
+    touch .env
+    ```
+
+    Add your Edge Config connection string:
+
+    ```bash
+    EDGE_CONFIG=your-edge-config-connection-string
+    ```
+
+    <Note>
+      Edge Config is optional. The application will use default configurations from `src/config/` files if Edge Config is not available.
+    </Note>
+
+    ### Configuration Files
+
+    The following configuration files can be customized:
+
+    - `src/config/serviceHours.js` - Service hours settings
+    - `src/config/whatsapp.js` - WhatsApp phone number and messages
+    - `src/config/orderLimits.js` - Minimum/maximum order amounts
+    - `src/config/damacanaLimits.js` - Damacana ordering time restrictions
+    - `src/config/language.js` - Multi-language support
+  </Step>
+
+  <Step title="Add Product Images (Optional)">
+    The application supports custom product images. To add images:
+
+    Create the images directory:
+
+    ```bash
+    mkdir -p public/images
+    ```
+
+    Add your product images to `public/images/` directory. The application expects:
+
+    - `logo.png` - Company logo (150-250px width, 40-60px height)
+    - Product images referenced in `src/data/products.js`
+    - Video files in `public/videos/` (optional)
+
+    <Note>
+      If images are not found, the application will display emoji placeholders defined in the products data.
+    </Note>
+  </Step>
+
+  <Step title="Verify Installation">
+    Verify that the installation was successful by checking the project structure:
+
+    ```bash
+    ls -la
+    ```
+
+    You should see:
+    - `node_modules/` - Installed dependencies
+    - `package.json` - Project configuration
+    - `src/` - Source code directory
+    - `public/` - Static assets
+    - `tailwind.config.js` - Tailwind CSS configuration (if present)
+  </Step>
+</Steps>
+
+## Project Structure
+
+After installation, your project structure should look like this:
+
+```
+suapp/
+├── node_modules/          # Installed dependencies
+├── public/                # Static assets
+│   ├── images/           # Product images and logo
+│   ├── videos/           # Video content (optional)
+│   └── index.html        # HTML template
+├── src/                  # Source code
+│   ├── components/       # React components
+│   ├── config/          # Configuration files
+│   │   ├── serviceHours.js
+│   │   ├── whatsapp.js
+│   │   ├── orderLimits.js
+│   │   └── damacanaLimits.js
+│   ├── context/         # React context (CartContext)
+│   ├── data/            # Static data
+│   │   ├── products.js  # Product catalog
+│   │   └── socialMedia.js
+│   ├── App.js           # Main application component
+│   ├── App.css          # Application styles
+│   └── index.js         # Application entry point
+├── package.json         # Project dependencies
+└── README.md           # Project documentation
+```
+
+## Common Installation Issues
+
+### Node Version Mismatch
+
+If you encounter errors during installation, ensure you're using a compatible Node.js version:
+
+```bash
+node --version  # Should be 14.x or higher
+```
+
+Consider using [nvm](https://github.com/nvm-sh/nvm) to manage Node.js versions.
+
+### Permission Errors
+
+If you get permission errors during `npm install`:
+
+```bash
+# Don't use sudo - instead fix npm permissions
+npm config set prefix ~/.npm-global
+export PATH=~/.npm-global/bin:$PATH
+```
+
+### Cache Issues
+
+If installation fails, try clearing the npm cache:
+
+```bash
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+```
+
+## Next Steps
+
+Now that you have installed the application, proceed to the Quick Start guide to run the development server:
+
+<Card
+  title="Quick Start Guide"
+  icon="rocket"
+  href="/quickstart"
+>
+  Learn how to run the development server and explore the application features
+</Card>

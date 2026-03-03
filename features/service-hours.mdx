@@ -1,0 +1,470 @@
+---
+title: 'Service Hours'
+description: 'Configure operating hours and control order availability'
+icon: 'clock'
+---
+
+The service hours system allows you to configure operating hours, set closed dates, and control when customers can place orders through the platform.
+
+## Configuration
+
+Service hours are configured in `src/config/serviceHours.js`:
+
+```javascript src/config/serviceHours.js
+export const DEFAULT_SERVICE_HOURS = {
+  // Service start time (24-hour format)
+  startHour: 8,
+  startMinute: 30,
+  
+  // Service end time (24-hour format)
+  endHour: 20,
+  endMinute: 30,
+  
+  // Weekday service enabled (Monday-Friday)
+  weekdaysEnabled: true,
+  
+  // Weekend service enabled (Saturday-Sunday)
+  weekendsEnabled: true,
+  
+  // Special closed dates (YYYY-MM-DD format)
+  closedDates: [
+    // Example: '2024-01-01', // New Year
+    // Example: '2024-12-25', // Christmas
+  ],
+  
+  // Test mode (if true, always open)
+  testMode: false
+};
+```
+
+<Note>
+Default hours are **8:30 AM to 8:30 PM**, 7 days a week.
+</Note>
+
+## Edge Config Integration
+
+The system supports dynamic configuration via Vercel Edge Config:
+
+```javascript src/config/serviceHours.js
+import { getEdgeConfigServiceSettings } from './edgeConfig';
+
+let ACTIVE_SERVICE_HOURS = { ...DEFAULT_SERVICE_HOURS };
+let STORE_STATUS = {
+  isOpen: true,
+  temporarilyClosed: false,
+  maintenanceMode: false,
+  reason: ""
+};
+
+export const loadEdgeConfigSettings = async () => {
+  try {
+    const edgeSettings = await getEdgeConfigServiceSettings();
+    
+    if (edgeSettings) {
+      if (edgeSettings.serviceHours) {
+        ACTIVE_SERVICE_HOURS = {
+          ...DEFAULT_SERVICE_HOURS,
+          ...edgeSettings.serviceHours
+        };
+      }
+      
+      if (edgeSettings.storeStatus) {
+        STORE_STATUS = edgeSettings.storeStatus;
+      }
+    }
+  } catch (error) {
+    console.warn('Edge Config failed, using default settings:', error);
+  }
+};
+```
+
+<Tip>
+Edge Config allows you to change service hours without redeploying your application.
+</Tip>
+
+## Store Status Management
+
+### Store Status Object
+
+```javascript
+const STORE_STATUS = {
+  isOpen: true,              // Master on/off switch
+  temporarilyClosed: false,  // Temporary closure
+  maintenanceMode: false,    // Maintenance mode
+  reason: ""                 // Reason for closure
+};
+```
+
+### Get Store Status
+
+```javascript src/config/serviceHours.js
+export const getStoreStatus = () => STORE_STATUS;
+```
+
+**Usage:**
+```javascript
+const status = getStoreStatus();
+if (status.temporarilyClosed) {
+  console.log('Store temporarily closed:', status.reason);
+}
+```
+
+## Service Hours Validation
+
+### Check if Service is Open
+
+Main function to determine if orders can be placed:
+
+```javascript src/config/serviceHours.js
+export const isServiceOpen = async () => {
+  // Load Edge Config settings
+  await loadEdgeConfigSettings();
+  
+  const serviceHours = getActiveServiceHours();
+  const storeStatus = getStoreStatus();
+  
+  // Manual closure check
+  if (!storeStatus.isOpen || storeStatus.temporarilyClosed || storeStatus.maintenanceMode) {
+    return false;
+  }
+  
+  // Test mode check
+  if (serviceHours.testMode) {
+    return true;
+  }
+
+  const now = new Date();
+  const currentDay = now.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const currentTime = currentHour * 60 + currentMinute;
+  
+  // Check closed dates
+  const today = now.toISOString().split('T')[0];
+  if (serviceHours.closedDates.includes(today)) {
+    return false;
+  }
+  
+  // Weekday/weekend check
+  const isWeekend = currentDay === 0 || currentDay === 6;
+  if (isWeekend && !serviceHours.weekendsEnabled) {
+    return false;
+  }
+  if (!isWeekend && !serviceHours.weekdaysEnabled) {
+    return false;
+  }
+  
+  // Time range check
+  const startTime = serviceHours.startHour * 60 + serviceHours.startMinute;
+  const endTime = serviceHours.endHour * 60 + serviceHours.endMinute;
+  
+  return currentTime >= startTime && currentTime <= endTime;
+};
+```
+
+<Accordion title="Validation Flow">
+
+1. **Load Edge Config** - Fetch latest settings
+2. **Store Status** - Check if manually closed
+3. **Test Mode** - Return true if enabled
+4. **Closed Dates** - Check against specific dates
+5. **Day of Week** - Verify weekday/weekend settings
+6. **Time Range** - Validate current time is within service hours
+
+</Accordion>
+
+## Display Service Hours
+
+### Format Service Hours Text
+
+Generate human-readable service hours:
+
+```javascript src/config/serviceHours.js
+export const getServiceHoursText = () => {
+  const serviceHours = getActiveServiceHours();
+  
+  const formatTime = (hour, minute) => {
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  };
+  
+  const startTime = formatTime(serviceHours.startHour, serviceHours.startMinute);
+  const endTime = formatTime(serviceHours.endHour, serviceHours.endMinute);
+  
+  return `${startTime} - ${endTime}`;
+};
+```
+
+**Output:**
+```
+08:30 - 20:30
+```
+
+### Calculate Next Service Time
+
+```javascript src/config/serviceHours.js
+export const getNextServiceTime = () => {
+  const serviceHours = getActiveServiceHours();
+  
+  if (serviceHours.testMode) {
+    return null;
+  }
+
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(serviceHours.startHour, serviceHours.startMinute, 0, 0);
+  
+  return tomorrow;
+};
+```
+
+## Real-Time Status Checking
+
+Implement real-time service hours monitoring:
+
+```javascript src/components/OrderButton.js
+import { isServiceOpen, getServiceHoursText, getStoreStatus } from '../config/serviceHours';
+
+const OrderButton = () => {
+  const [serviceOpen, setServiceOpen] = useState(false);
+  const [storeStatus, setStoreStatus] = useState(null);
+
+  useEffect(() => {
+    const checkServiceStatus = async () => {
+      const isOpen = await isServiceOpen();
+      const status = getStoreStatus();
+      setServiceOpen(isOpen);
+      setStoreStatus(status);
+    };
+
+    // Initial check
+    checkServiceStatus();
+
+    // Check every minute
+    const interval = setInterval(checkServiceStatus, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <button disabled={!serviceOpen}>
+      {!serviceOpen
+        ? storeStatus?.temporarilyClosed 
+          ? 'Geçici Olarak Kapalı'
+          : storeStatus?.maintenanceMode
+            ? 'Bakım Modunda'
+            : `Servis Saatleri: ${getServiceHoursText()}`
+        : 'Sipariş Ver'
+      }
+    </button>
+  );
+};
+```
+
+<Warning>
+The service status is checked every 60 seconds. This interval can be adjusted based on your needs.
+</Warning>
+
+## Configuration Examples
+
+### Weekdays Only
+
+```javascript src/config/serviceHours.js
+export const DEFAULT_SERVICE_HOURS = {
+  startHour: 9,
+  startMinute: 0,
+  endHour: 18,
+  endMinute: 0,
+  weekdaysEnabled: true,
+  weekendsEnabled: false, // No weekend service
+  closedDates: [],
+  testMode: false
+};
+```
+
+### Extended Weekend Hours
+
+Use Edge Config to set different weekend hours:
+
+```json Edge Config
+{
+  "serviceHours": {
+    "startHour": 10,
+    "startMinute": 0,
+    "endHour": 22,
+    "endMinute": 0
+  }
+}
+```
+
+### Holiday Closures
+
+```javascript src/config/serviceHours.js
+export const DEFAULT_SERVICE_HOURS = {
+  // ... other settings
+  closedDates: [
+    '2024-01-01', // New Year's Day
+    '2024-04-23', // National Sovereignty Day
+    '2024-05-01', // Labor Day
+    '2024-05-19', // Youth and Sports Day
+    '2024-08-30', // Victory Day
+    '2024-10-29', // Republic Day
+  ],
+};
+```
+
+### Temporary Closure
+
+Use Edge Config for emergency closures:
+
+```json Edge Config
+{
+  "storeStatus": {
+    "isOpen": false,
+    "temporarilyClosed": true,
+    "reason": "Teknik arıza nedeniyle geçici olarak kapalıyız"
+  }
+}
+```
+
+## Test Mode
+
+Enable test mode for development:
+
+```javascript src/config/serviceHours.js
+export const DEFAULT_SERVICE_HOURS = {
+  // ... other settings
+  testMode: true  // Always returns true for isServiceOpen()
+};
+```
+
+<Warning>
+**Never enable test mode in production!** It bypasses all service hour restrictions.
+</Warning>
+
+## Integration with Order Flow
+
+### Disable Order Button
+
+```javascript src/components/OrderButton.js
+const isButtonDisabled = !serviceOpen || !orderValidation.isValid;
+
+return (
+  <button 
+    onClick={handleOrderClick}
+    disabled={isButtonDisabled}
+    className={isButtonDisabled ? 'order-button-disabled' : ''}
+  >
+    {buttonText}
+  </button>
+);
+```
+
+### Show Service Hours in UI
+
+```javascript ServiceHoursDisplay.js
+import { getServiceHoursText, isServiceOpen } from '../config/serviceHours';
+
+function ServiceHoursDisplay() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      setIsOpen(await isServiceOpen());
+    };
+    checkStatus();
+  }, []);
+
+  return (
+    <div className={`status ${isOpen ? 'open' : 'closed'}`}>
+      {isOpen ? '🟢 Açık' : '🔴 Kapalı'}
+      <span>Servis Saatleri: {getServiceHoursText()}</span>
+    </div>
+  );
+}
+```
+
+## Timezone Considerations
+
+<Note>
+The system uses the client's local timezone. Ensure your server and client timezones are properly configured.
+</Note>
+
+For server-side rendering:
+
+```javascript
+// Use specific timezone
+const now = new Date().toLocaleString('en-US', { timeZone: 'Europe/Istanbul' });
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+
+<Card title="Edge Config" icon="cloud">
+Use Edge Config for production to enable real-time updates without redeployment.
+</Card>
+
+<Card title="Clear Messaging" icon="message">
+Always display service hours and reasons for closure to customers.
+</Card>
+
+<Card title="Graceful Degradation" icon="shield">
+Fallback to default settings if Edge Config fails to load.
+</Card>
+
+<Card title="Testing" icon="vial">
+Test service hour logic across different timezones and edge cases.
+</Card>
+
+</CardGroup>
+
+## Troubleshooting
+
+### Service Hours Not Updating
+
+```javascript
+// Clear and reload Edge Config
+await loadEdgeConfigSettings();
+const hours = getActiveServiceHours();
+console.log('Active hours:', hours);
+```
+
+### Always Showing as Closed
+
+```javascript
+// Enable test mode temporarily
+const DEFAULT_SERVICE_HOURS = {
+  // ... other settings
+  testMode: true  // Temporarily enable
+};
+```
+
+### Debugging Service Status
+
+```javascript
+const debugServiceHours = async () => {
+  const isOpen = await isServiceOpen();
+  const hours = getActiveServiceHours();
+  const status = getStoreStatus();
+  
+  console.log('Is Open:', isOpen);
+  console.log('Service Hours:', hours);
+  console.log('Store Status:', status);
+  console.log('Current Time:', new Date().toLocaleString());
+};
+```
+
+## Related Documentation
+
+<CardGroup cols={2}>
+
+<Card title="WhatsApp Ordering" icon="whatsapp" href="/features/whatsapp-ordering">
+See how service hours integrate with the order button
+</Card>
+
+<Card title="Edge Config Setup" icon="server" href="/configuration/edge-config">
+Learn how to configure Vercel Edge Config for dynamic settings
+</Card>
+
+</CardGroup>

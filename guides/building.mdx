@@ -1,0 +1,208 @@
+---
+title: Building the Application
+description: Learn how to build the Bİ DOLU İÇECEK application for production deployment
+---
+
+## Overview
+
+The Bİ DOLU İÇECEK application is built using Create React App (react-scripts), which provides an optimized production build with automatic code splitting, minification, and performance optimizations.
+
+## Build Process
+
+<Steps>
+  <Step title="Install Dependencies">
+    Before building, ensure all dependencies are installed:
+    ```bash
+    npm install
+    ```
+  </Step>
+
+  <Step title="Run the Build Command">
+    Execute the build script from package.json:
+    ```bash
+    npm run build
+    ```
+    
+    This command runs `react-scripts build`, which:
+    - Compiles React components and JSX
+    - Bundles JavaScript files
+    - Processes CSS with PostCSS and Tailwind CSS
+    - Optimizes images and assets
+    - Generates production-ready files
+  </Step>
+
+  <Step title="Verify Build Output">
+    After a successful build, you'll find the production files in the `build/` directory:
+    ```
+    build/
+    ├── static/
+    │   ├── css/        # Minified CSS files
+    │   ├── js/         # Bundled and minified JavaScript
+    │   └── media/      # Optimized images and assets
+    ├── index.html      # Entry point HTML file
+    ├── favicon.ico     # Site favicon
+    └── manifest.json   # PWA manifest
+    ```
+  </Step>
+</Steps>
+
+## Build Output Details
+
+### JavaScript Bundles
+
+The build process creates optimized JavaScript bundles:
+
+- **main.[hash].js** - Your application code
+- **[number].[hash].chunk.js** - Code-split chunks for lazy loading
+- **runtime-main.[hash].js** - Webpack runtime logic
+
+<Note>
+  File names include content hashes (e.g., `main.abc123.js`) to enable long-term caching. When files change, their hashes change, automatically busting the cache.
+</Note>
+
+### CSS Files
+
+Tailwind CSS and custom styles are processed and bundled:
+
+- Minified and optimized
+- Unused styles removed (tree-shaking)
+- PostCSS transformations applied
+- Autoprefixer for browser compatibility
+
+### Asset Optimization
+
+- Images under 10KB are inlined as Data URIs
+- Larger images are copied to `build/static/media/`
+- File names include content hashes for caching
+
+## Testing the Build Locally
+
+<Steps>
+  <Step title="Install a Static Server">
+    Use `serve` or any static file server:
+    ```bash
+    npm install -g serve
+    ```
+  </Step>
+
+  <Step title="Serve the Build Directory">
+    Run the server pointing to the build folder:
+    ```bash
+    npx serve -s build
+    ```
+    
+    The `-s` flag enables single-page application mode, redirecting all requests to `index.html`.
+  </Step>
+
+  <Step title="Access the Application">
+    Open your browser to the URL shown (typically `http://localhost:3000`):
+    ```
+    ┌────────────────────────────────────────┐
+    │                                        │
+    │   Serving!                             │
+    │                                        │
+    │   Local:  http://localhost:3000        │
+    │                                        │
+    └────────────────────────────────────────┘
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+  The development server (`npm start`) and production build behave differently. Always test the production build before deploying to ensure everything works correctly.
+</Warning>
+
+## Build Optimization
+
+### Production Optimizations
+
+The build process automatically applies:
+
+1. **Code Minification** - JavaScript and CSS are minified
+2. **Dead Code Elimination** - Unused code is removed
+3. **Code Splitting** - Lazy loading for better performance
+4. **Asset Optimization** - Images and files are optimized
+5. **Source Maps** - Generated for debugging (optional)
+
+### Environment Variables
+
+Environment variables are embedded at build time:
+
+```bash
+# Set environment variables before building
+REACT_APP_API_URL=https://api.example.com npm run build
+```
+
+<Note>
+  Only variables starting with `REACT_APP_` are accessible in your code. They are embedded during build time and cannot be changed without rebuilding.
+</Note>
+
+### Browser Support
+
+The application targets browsers defined in `package.json`:
+
+**Production:**
+- \>0.2% market share
+- Not dead browsers
+- Not Opera Mini
+
+**Development:**
+- Last Chrome version
+- Last Firefox version
+- Last Safari version
+
+### Build Performance Tips
+
+<Steps>
+  <Step title="Clean Build">
+    Remove the previous build before creating a new one:
+    ```bash
+    rm -rf build && npm run build
+    ```
+  </Step>
+
+  <Step title="Analyze Bundle Size">
+    Check what's included in your bundles:
+    ```bash
+    npm run build
+    # Review the file sizes in the console output
+    ```
+  </Step>
+
+  <Step title="Optimize Dependencies">
+    Keep dependencies minimal:
+    ```bash
+    npm ls
+    # Review and remove unused packages
+    ```
+  </Step>
+</Steps>
+
+## Build Troubleshooting
+
+### Common Issues
+
+**Build Fails with Memory Error:**
+```bash
+# Increase Node.js memory limit
+NODE_OPTIONS=--max-old-space-size=4096 npm run build
+```
+
+**CSS Not Loading:**
+- Ensure PostCSS and Tailwind are properly configured
+- Check for CSS import errors in components
+
+**Assets Not Found:**
+- Use relative paths or the `public/` folder
+- Ensure images are imported correctly in components
+
+<Warning>
+  Never commit the `build/` directory to version control. Add it to `.gitignore` and build fresh for each deployment.
+</Warning>
+
+## Next Steps
+
+After building successfully, you're ready to deploy:
+
+- [Deployment Options →](/guides/deployment)
+- Learn about deploying to Vercel, Netlify, and other platforms

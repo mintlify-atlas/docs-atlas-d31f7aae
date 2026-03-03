@@ -1,0 +1,413 @@
+---
+title: 'Language API'
+description: 'API reference for multi-language support and translations'
+---
+
+## Overview
+
+The Language API provides functions for managing language settings and translating UI text between Turkish and Arabic.
+
+**Source:** `src/config/language.js`
+
+---
+
+## Functions
+
+### toggleLanguage()
+
+Toggles between Turkish and Arabic languages.
+
+```javascript
+import { toggleLanguage } from '@/config/language';
+
+const LanguageSwitch = () => {
+  const handleToggle = () => {
+    const newLang = toggleLanguage();
+    console.log(`Switched to: ${newLang}`);
+    // Re-render components to show new language
+    window.location.reload();
+  };
+  
+  return <button onClick={handleToggle}>Toggle Language</button>;
+};
+```
+
+<ParamField path="returns" type="string">
+  The new language code after toggling (`'tr'` or `'ar'`)
+</ParamField>
+
+<ResponseField name="Behavior">
+  - Toggles between `'tr'` (Turkish) and `'ar'` (Arabic)
+  - Saves selected language to `localStorage` with key `'suapp-language'`
+  - Returns the new language code
+  - Side effect: Updates internal `currentLanguage` variable
+</ResponseField>
+
+---
+
+### getCurrentLanguage()
+
+Gets the current active language code.
+
+```javascript
+import { getCurrentLanguage } from '@/config/language';
+
+const lang = getCurrentLanguage();
+console.log(lang); // "tr" or "ar"
+```
+
+<ParamField path="returns" type="string">
+  Current language code (`'tr'` or `'ar'`)
+</ParamField>
+
+<ResponseField name="Behavior">
+  - Checks `localStorage` for saved language preference
+  - Falls back to `DEFAULT_LANGUAGE` (`'tr'`) if no saved preference
+  - Validates saved language exists in `LANGUAGES` object
+  - Caches result in internal `currentLanguage` variable
+</ResponseField>
+
+---
+
+### getCurrentLanguageInfo()
+
+Gets complete information about the current language.
+
+```javascript
+import { getCurrentLanguageInfo } from '@/config/language';
+
+const langInfo = getCurrentLanguageInfo();
+console.log(langInfo.name); // "Türkçe"
+console.log(langInfo.flag); // "🇹🇷"
+```
+
+<ParamField path="returns" type="object">
+  Language information object
+</ParamField>
+
+<Expandable title="Language Info Object Structure">
+  <ResponseField name="code" type="string">
+    Language code (`'tr'` or `'ar'`)
+  </ResponseField>
+  
+  <ResponseField name="name" type="string">
+    Language name in native script
+    - Turkish: `"Türkçe"`
+    - Arabic: `"العربية"`
+  </ResponseField>
+  
+  <ResponseField name="flag" type="string">
+    Flag emoji
+    - Turkish: `"🇹🇷"`
+    - Arabic: `"🇸🇦"`
+  </ResponseField>
+  
+  <ResponseField name="translations" type="object">
+    Object containing all translation keys and values for this language
+  </ResponseField>
+</Expandable>
+
+---
+
+### t()
+
+Translates a key to the current language with optional parameter substitution.
+
+```javascript
+import { t } from '@/config/language';
+
+// Simple translation
+const orderText = t('orderButton');
+console.log(orderText); // "Sipariş Ver" (TR) or "اطلب" (AR)
+
+// With parameters
+const minOrderText = t('minimumOrder', { minimumAmount: 400 });
+console.log(minOrderText); // "Minimum sepet tutarı 400 TL'dir"
+```
+
+<ParamField path="key" type="string" required>
+  Translation key to look up
+</ParamField>
+
+<ParamField path="params" type="object" optional>
+  Object with parameter values for placeholder replacement
+</ParamField>
+
+<ParamField path="returns" type="string">
+  Translated string with parameters replaced, or the key itself if translation not found
+</ParamField>
+
+<ResponseField name="Parameter Substitution">
+  Replaces placeholders in format `{paramName}` with values from params object:
+  
+  ```javascript
+  t('minimumOrder', { minimumAmount: 400 })
+  // Template: "Minimum sepet tutarı {minimumAmount} TL'dir"
+  // Result: "Minimum sepet tutarı 400 TL'dir"
+  ```
+  
+  Multiple parameters:
+  ```javascript
+  t('currentCart', { amount: 350 })
+  // Result: "Şu anki sepet: 350 TL"
+  ```
+</ResponseField>
+
+<ResponseField name="Fallback Behavior">
+  If translation key not found:
+  1. Tries current language
+  2. Falls back to default language (Turkish)
+  3. Returns the key itself if still not found
+</ResponseField>
+
+---
+
+## Configuration
+
+### LANGUAGES
+
+Language configuration object containing all translations.
+
+```javascript
+import { LANGUAGES } from '@/config/language';
+
+console.log(LANGUAGES.tr.name); // "Türkçe"
+console.log(LANGUAGES.ar.flag); // "🇸🇦"
+```
+
+<Expandable title="Available Languages">
+  <ResponseField name="tr" type="object">
+    Turkish language configuration
+  </ResponseField>
+  
+  <ResponseField name="ar" type="object">
+    Arabic language configuration
+  </ResponseField>
+</Expandable>
+
+---
+
+### DEFAULT_LANGUAGE
+
+Default language code.
+
+```javascript
+import { DEFAULT_LANGUAGE } from '@/config/language';
+
+console.log(DEFAULT_LANGUAGE); // "tr"
+```
+
+<ParamField path="value" type="string" default="tr">
+  Default language is Turkish
+</ParamField>
+
+---
+
+## Translation Keys
+
+All available translation keys:
+
+| Key | Turkish (TR) | Arabic (AR) |
+|-----|--------------|-------------|
+| `seeOptions` | Seçenekleri Görün | انظر الخيارات |
+| `addToCart` | Sepete Ekle | أضف إلى السلة |
+| `productDescription` | Ürün seçeneklerini inceleyin ve sipariş verin. | تعرف على خيارات المنتج واطلبه. |
+| `clickToOrder` | Ürüne tıklayarak WhatsApp ile sipariş verebilirsiniz | يمكنكم الطلب عبر الواتساب بالضغط على المنتج. |
+| `damacanaRestricted` | Damacana siparişleri {cutoffTime}'dan sonra alınmamaktadır | لا يتم قبول طلبات Demijohn بعد {cutoffTime} |
+| `orderButton` | Sipariş Ver | اطلب |
+| `orderUnavailable` | Servis Saatleri Dışındadır | خارج ساعات الخدمة |
+| `minimumOrder` | Minimum sepet tutarı {minimumAmount} TL'dir | الحد الأدنى للسلة {minimumAmount} ليرة تركية |
+| `currentCart` | Şu anki sepet: {amount} TL | السلة الحالية: {amount} ليرة تركية |
+| `welcomeMessage` | Lütfen ilk siparişinizde adresinizi eklemeyi unutmayın, Teşekkürler. | يرجى عدم نسيان إضافة عنوانكم في طلبكم الأول، شكراً. |
+| `understood` | Anladım | فهمت |
+| `scrollDown` | Kaydır | تمرر |
+
+---
+
+## Usage Examples
+
+### Language Switcher Component
+
+```javascript
+import { useState, useEffect } from 'react';
+import { 
+  toggleLanguage, 
+  getCurrentLanguageInfo 
+} from '@/config/language';
+
+const LanguageSwitcher = () => {
+  const [langInfo, setLangInfo] = useState(getCurrentLanguageInfo());
+  
+  const handleToggle = () => {
+    toggleLanguage();
+    setLangInfo(getCurrentLanguageInfo());
+  };
+  
+  return (
+    <button onClick={handleToggle}>
+      {langInfo.flag} {langInfo.name}
+    </button>
+  );
+};
+```
+
+### Translated UI Components
+
+```javascript
+import { t } from '@/config/language';
+
+const ProductCard = ({ product }) => (
+  <div>
+    <h3>{product.name}</h3>
+    <p>{t('productDescription')}</p>
+    <button>{t('addToCart')}</button>
+  </div>
+);
+```
+
+### Dynamic Messages with Parameters
+
+```javascript
+import { t } from '@/config/language';
+import { ORDER_LIMITS } from '@/config/orderLimits';
+import { useCart } from '@/context/CartContext';
+
+const MinimumOrderWarning = () => {
+  const { getTotalPrice } = useCart();
+  const totalPrice = getTotalPrice();
+  const minAmount = ORDER_LIMITS.minimumOrderAmount;
+  
+  if (totalPrice >= minAmount) return null;
+  
+  return (
+    <div className="warning">
+      <p>{t('minimumOrder', { minimumAmount: minAmount })}</p>
+      <p>{t('currentCart', { amount: totalPrice.toFixed(2) })}</p>
+    </div>
+  );
+};
+```
+
+### Service Hours Message
+
+```javascript
+import { t } from '@/config/language';
+import { isServiceOpen } from '@/config/serviceHours';
+
+const OrderButton = () => {
+  const [canOrder, setCanOrder] = useState(false);
+  
+  useEffect(() => {
+    isServiceOpen().then(setCanOrder);
+  }, []);
+  
+  return (
+    <button disabled={!canOrder}>
+      {canOrder ? t('orderButton') : t('orderUnavailable')}
+    </button>
+  );
+};
+```
+
+### Damacana Time Restriction
+
+```javascript
+import { t } from '@/config/language';
+import { DAMACANA_LIMITS } from '@/config/damacanaLimits';
+
+const DamacanaWarning = () => {
+  const cutoffTime = `${DAMACANA_LIMITS.cutoffHour}:00`;
+  
+  return (
+    <Alert>
+      {t('damacanaRestricted', { cutoffTime })}
+    </Alert>
+  );
+};
+```
+
+### Welcome Modal
+
+```javascript
+import { useState } from 'react';
+import { t } from '@/config/language';
+
+const WelcomeModal = () => {
+  const [show, setShow] = useState(true);
+  
+  if (!show) return null;
+  
+  return (
+    <Modal>
+      <p>{t('welcomeMessage')}</p>
+      <button onClick={() => setShow(false)}>
+        {t('understood')}
+      </button>
+    </Modal>
+  );
+};
+```
+
+---
+
+## LocalStorage
+
+The language preference is persisted in browser localStorage:
+
+<ResponseField name="Storage Key">
+  `suapp-language`
+</ResponseField>
+
+<ResponseField name="Storage Value">
+  Language code: `'tr'` or `'ar'`
+</ResponseField>
+
+<ResponseField name="Behavior">
+  - Set when `toggleLanguage()` is called
+  - Read on app initialization by `getCurrentLanguage()`
+  - Persists across page refreshes and browser sessions
+</ResponseField>
+
+---
+
+## Adding New Translations
+
+To add new translation keys:
+
+```javascript
+// In language.js
+export const LANGUAGES = {
+  tr: {
+    code: 'tr',
+    name: 'Türkçe',
+    flag: '🇹🇷',
+    translations: {
+      // Existing translations...
+      
+      // Add new key
+      myNewKey: "Türkçe metin",
+      anotherKey: "Başka bir metin"
+    }
+  },
+  ar: {
+    code: 'ar',
+    name: 'العربية',
+    flag: '🇸🇦',
+    translations: {
+      // Existing translations...
+      
+      // Add same key in Arabic
+      myNewKey: "نص عربي",
+      anotherKey: "نص آخر"
+    }
+  }
+};
+```
+
+Then use in components:
+
+```javascript
+import { t } from '@/config/language';
+
+const text = t('myNewKey');
+```

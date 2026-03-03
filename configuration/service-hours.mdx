@@ -1,0 +1,225 @@
+---
+title: 'Service Hours Configuration'
+description: 'Configure operating hours, weekday/weekend settings, and closed dates for your water delivery service'
+---
+
+## Overview
+
+The service hours configuration controls when your water delivery service is available to accept orders. This system supports different hours for weekdays and weekends, special closed dates, and can be overridden remotely via Edge Config.
+
+<Note>
+  Service hours can be configured both locally in `src/config/serviceHours.js` and remotely via [Edge Config](/configuration/edge-config).
+</Note>
+
+## Configuration File
+
+The service hours are defined in `src/config/serviceHours.js:4-27`.
+
+## Configuration Options
+
+<ParamField path="startHour" type="number" default="8">
+  Service start hour in 24-hour format (0-23)
+</ParamField>
+
+<ParamField path="startMinute" type="number" default="30">
+  Service start minute (0-59)
+</ParamField>
+
+<ParamField path="endHour" type="number" default="20">
+  Service end hour in 24-hour format (0-23)
+</ParamField>
+
+<ParamField path="endMinute" type="number" default="30">
+  Service end minute (0-59)
+</ParamField>
+
+<ParamField path="weekdaysEnabled" type="boolean" default="true">
+  Enable service on weekdays (Monday-Friday)
+</ParamField>
+
+<ParamField path="weekendsEnabled" type="boolean" default="true">
+  Enable service on weekends (Saturday-Sunday)
+</ParamField>
+
+<ParamField path="closedDates" type="array" default="[]">
+  Array of dates when service is closed, in `YYYY-MM-DD` format
+  
+  Example: `['2024-01-01', '2024-12-25']`
+</ParamField>
+
+<ParamField path="testMode" type="boolean" default="false">
+  When enabled, service is always considered open regardless of time checks
+  
+  <Warning>
+    Only use test mode in development environments. Never enable in production.
+  </Warning>
+</ParamField>
+
+## Usage Examples
+
+### Checking Service Status
+
+```javascript src/config/serviceHours.js
+import { isServiceOpen, getServiceHoursText } from '@/config/serviceHours';
+
+// Check if service is currently open
+const open = await isServiceOpen();
+if (!open) {
+  console.log('Service is currently closed');
+}
+
+// Get formatted service hours text
+const hours = getServiceHoursText(); // Returns "08:30 - 20:30"
+```
+
+### Getting Active Configuration
+
+```javascript
+import { getActiveServiceHours, getStoreStatus } from '@/config/serviceHours';
+
+// Get current service hours (includes Edge Config overrides)
+const serviceHours = getActiveServiceHours();
+console.log(serviceHours);
+// {
+//   startHour: 8,
+//   startMinute: 30,
+//   endHour: 20,
+//   endMinute: 30,
+//   weekdaysEnabled: true,
+//   weekendsEnabled: true,
+//   closedDates: [],
+//   testMode: false
+// }
+
+// Check store status
+const status = getStoreStatus();
+console.log(status);
+// {
+//   isOpen: true,
+//   temporarilyClosed: false,
+//   maintenanceMode: false,
+//   reason: ""
+// }
+```
+
+### Getting Next Service Time
+
+```javascript src/config/serviceHours.js
+import { getNextServiceTime } from '@/config/serviceHours';
+
+const nextOpen = getNextServiceTime();
+if (nextOpen) {
+  console.log(`Service opens next at: ${nextOpen.toLocaleString()}`);
+}
+```
+
+## Configuration Examples
+
+### Standard Business Hours
+
+```javascript src/config/serviceHours.js
+export const DEFAULT_SERVICE_HOURS = {
+  startHour: 8,
+  startMinute: 30,
+  endHour: 20,
+  endMinute: 30,
+  weekdaysEnabled: true,
+  weekendsEnabled: true,
+  closedDates: [],
+  testMode: false
+};
+```
+
+### Weekdays Only
+
+```javascript src/config/serviceHours.js
+export const DEFAULT_SERVICE_HOURS = {
+  startHour: 9,
+  startMinute: 0,
+  endHour: 18,
+  endMinute: 0,
+  weekdaysEnabled: true,
+  weekendsEnabled: false, // No weekend service
+  closedDates: [],
+  testMode: false
+};
+```
+
+### With Holiday Closures
+
+```javascript src/config/serviceHours.js
+export const DEFAULT_SERVICE_HOURS = {
+  startHour: 8,
+  startMinute: 0,
+  endHour: 22,
+  endMinute: 0,
+  weekdaysEnabled: true,
+  weekendsEnabled: true,
+  closedDates: [
+    '2024-01-01', // New Year's Day
+    '2024-04-23', // National Sovereignty Day
+    '2024-05-01', // Labour Day
+    '2024-10-29', // Republic Day
+  ],
+  testMode: false
+};
+```
+
+## How It Works
+
+The service hours system follows this logic (see `src/config/serviceHours.js:74-117`):
+
+<Steps>
+  <Step title="Load Edge Config">
+    First, the system loads any remote configuration from Edge Config that may override local settings.
+  </Step>
+  
+  <Step title="Check Store Status">
+    If the store is manually closed, temporarily closed, or in maintenance mode, return false immediately.
+  </Step>
+  
+  <Step title="Check Test Mode">
+    If test mode is enabled, return true (always open).
+  </Step>
+  
+  <Step title="Check Closed Dates">
+    Compare current date against the `closedDates` array. If today is in the list, return false.
+  </Step>
+  
+  <Step title="Check Day of Week">
+    Verify if service is enabled for the current day (weekday vs weekend).
+  </Step>
+  
+  <Step title="Check Time Range">
+    Finally, check if current time is within the configured start and end times.
+  </Step>
+</Steps>
+
+## Store Status Control
+
+In addition to time-based rules, service can be controlled via store status flags:
+
+<ParamField path="storeStatus.isOpen" type="boolean" default="true">
+  Master switch for the entire store
+</ParamField>
+
+<ParamField path="storeStatus.temporarilyClosed" type="boolean" default="false">
+  Temporarily close the store (e.g., during emergencies)
+</ParamField>
+
+<ParamField path="storeStatus.maintenanceMode" type="boolean" default="false">
+  Enable maintenance mode to prevent all orders
+</ParamField>
+
+<ParamField path="storeStatus.reason" type="string" default="">
+  Optional reason for closure (displayed to customers)
+</ParamField>
+
+<Info>
+  Store status can be controlled remotely via Edge Config without deploying code changes. See [Edge Config](/configuration/edge-config) for details.
+</Info>
+
+## Related Configuration
+
+- [Edge Config](/configuration/edge-config) - Override service hours remotely
+- [Damacana Limits](/configuration/damacana-limits) - Time restrictions for water jug orders

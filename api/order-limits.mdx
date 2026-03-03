@@ -1,0 +1,197 @@
+---
+title: 'Order Limits API'
+description: 'API reference for order amount validation and limits'
+---
+
+## Overview
+
+The Order Limits API provides functions to validate order amounts against minimum and maximum thresholds.
+
+**Source:** `src/config/orderLimits.js`
+
+---
+
+## Functions
+
+### validateOrderAmount()
+
+Validates the total order amount against both minimum and maximum limits.
+
+```javascript
+import { validateOrderAmount } from '@/config/orderLimits';
+
+const totalPrice = 350;
+const result = validateOrderAmount(totalPrice);
+
+if (!result.isValid) {
+  alert(result.message);
+}
+```
+
+<ParamField path="totalPrice" type="number" required>
+  Total order amount in TL
+</ParamField>
+
+<ParamField path="returns" type="object">
+  Validation result object
+</ParamField>
+
+<Expandable title="Return Object Structure">
+  <ResponseField name="isValid" type="boolean">
+    Whether the order amount is valid
+  </ResponseField>
+  
+  <ResponseField name="message" type="string | null">
+    Error message if invalid, `null` if valid
+  </ResponseField>
+</Expandable>
+
+<ResponseField name="Example Return Values">
+  ```javascript
+  // Valid order
+  { isValid: true, message: null }
+  
+  // Below minimum
+  { isValid: false, message: "Minimum sepet tutarı 400 TL'dir" }
+  
+  // Above maximum
+  { isValid: false, message: "Maksimum sipariş tutarı 5000 TL'dir" }
+  ```
+</ResponseField>
+
+---
+
+### checkMinimumOrder()
+
+Checks if the order meets the minimum amount requirement.
+
+```javascript
+import { checkMinimumOrder } from '@/config/orderLimits';
+
+const result = checkMinimumOrder(350);
+if (!result.isValid) {
+  console.log(result.message);
+}
+```
+
+<ParamField path="totalPrice" type="number" required>
+  Total order amount in TL
+</ParamField>
+
+<ParamField path="returns" type="object">
+  Validation result with `isValid` and `message` properties
+</ParamField>
+
+---
+
+### checkMaximumOrder()
+
+Checks if the order exceeds the maximum amount limit.
+
+```javascript
+import { checkMaximumOrder } from '@/config/orderLimits';
+
+const result = checkMaximumOrder(6000);
+if (!result.isValid) {
+  console.log(result.message);
+}
+```
+
+<ParamField path="totalPrice" type="number" required>
+  Total order amount in TL
+</ParamField>
+
+<ParamField path="returns" type="object">
+  Validation result with `isValid` and `message` properties
+</ParamField>
+
+<ResponseField name="Behavior">
+  - Returns `{ isValid: true, message: null }` if no maximum limit is set (`maximumOrderAmount: null`)
+  - Only validates if `maximumOrderAmount` is configured
+</ResponseField>
+
+---
+
+## Configuration
+
+### ORDER_LIMITS
+
+Order limits configuration object.
+
+```javascript
+import { ORDER_LIMITS } from '@/config/orderLimits';
+
+console.log(ORDER_LIMITS.minimumOrderAmount); // 400
+```
+
+<Expandable title="Configuration Properties">
+  <ResponseField name="minimumOrderAmount" type="number" default={400}>
+    Minimum order amount in TL
+  </ResponseField>
+  
+  <ResponseField name="minimumOrderEnabled" type="boolean" default={true}>
+    Whether minimum order validation is enabled
+  </ResponseField>
+  
+  <ResponseField name="minimumOrderMessage" type="string">
+    Error message shown when minimum is not met. Supports `{minimumOrderAmount}` placeholder
+  </ResponseField>
+  
+  <ResponseField name="maximumOrderAmount" type="number | null" default={null}>
+    Maximum order amount in TL, or `null` for no limit
+  </ResponseField>
+  
+  <ResponseField name="maximumOrderMessage" type="string">
+    Error message shown when maximum is exceeded. Supports `{amount}` placeholder
+  </ResponseField>
+</Expandable>
+
+---
+
+## Usage Example
+
+```javascript
+import { validateOrderAmount, ORDER_LIMITS } from '@/config/orderLimits';
+import { useCart } from '@/context/CartContext';
+
+const CheckoutButton = () => {
+  const { getTotalPrice } = useCart();
+  const [error, setError] = useState(null);
+  
+  const handleCheckout = () => {
+    const totalPrice = getTotalPrice();
+    const validation = validateOrderAmount(totalPrice);
+    
+    if (!validation.isValid) {
+      setError(validation.message);
+      return;
+    }
+    
+    // Proceed with checkout
+    processOrder();
+  };
+  
+  const remainingAmount = ORDER_LIMITS.minimumOrderAmount - getTotalPrice();
+  
+  return (
+    <div>
+      {remainingAmount > 0 && (
+        <p>Add {remainingAmount} TL more to reach minimum</p>
+      )}
+      {error && <p className="error">{error}</p>}
+      <button onClick={handleCheckout}>Complete Order</button>
+    </div>
+  );
+};
+```
+
+---
+
+## Message Placeholders
+
+The configuration messages support dynamic placeholders:
+
+| Placeholder | Used In | Description |
+|-------------|---------|-------------|
+| `{minimumOrderAmount}` | `minimumOrderMessage` | Replaced with the minimum order amount |
+| `{amount}` | `maximumOrderMessage` | Replaced with the maximum order amount |

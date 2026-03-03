@@ -1,0 +1,309 @@
+---
+title: 'Damacana Limits API'
+description: 'API reference for damacana (water jug) order time restrictions'
+---
+
+## Overview
+
+The Damacana Limits API manages time-based restrictions for water jug orders, including cutoff times and product identification.
+
+**Source:** `src/config/damacanaLimits.js`
+
+---
+
+## Functions
+
+### checkCartForDamacana()
+
+Checks if the cart contains damacana items and validates whether damacana orders are allowed at the current time.
+
+```javascript
+import { checkCartForDamacana } from '@/config/damacanaLimits';
+import { useCart } from '@/context/CartContext';
+
+const CartSummary = () => {
+  const { items } = useCart();
+  const damacanaCheck = checkCartForDamacana(items);
+  
+  if (damacanaCheck.hasDamacana && !damacanaCheck.isAllowed) {
+    return <Alert>{damacanaCheck.message}</Alert>;
+  }
+  
+  return <CheckoutButton />;
+};
+```
+
+<ParamField path="cartItems" type="array" required>
+  Array of cart items. Each item must have an `id` property
+</ParamField>
+
+<ParamField path="returns" type="object">
+  Damacana validation result object
+</ParamField>
+
+<Expandable title="Return Object Structure">
+  <ResponseField name="hasDamacana" type="boolean">
+    Whether the cart contains any damacana items
+  </ResponseField>
+  
+  <ResponseField name="damacanaItems" type="array" optional>
+    Array of damacana items in cart (only present if `hasDamacana` is true)
+  </ResponseField>
+  
+  <ResponseField name="isAllowed" type="boolean">
+    Whether damacana orders are allowed at the current time
+  </ResponseField>
+  
+  <ResponseField name="message" type="string | null">
+    Error message if not allowed, `null` if allowed
+  </ResponseField>
+</Expandable>
+
+<ResponseField name="Example Return Values">
+  ```javascript
+  // No damacana items
+  { hasDamacana: false, isAllowed: true, message: null }
+  
+  // Has damacana, allowed
+  { 
+    hasDamacana: true, 
+    damacanaItems: [{id: 11, name: "19L Damacana", ...}],
+    isAllowed: true, 
+    message: null 
+  }
+  
+  // Has damacana, not allowed
+  { 
+    hasDamacana: true,
+    damacanaItems: [{id: 11, name: "19L Damacana", ...}],
+    isAllowed: false,
+    message: "Damacana siparişleri 19:00'dan sonra alınmamaktadır"
+  }
+  ```
+</ResponseField>
+
+---
+
+### isDamacana()
+
+Checks if a product ID matches the damacana pattern.
+
+```javascript
+import { isDamacana } from '@/config/damacanaLimits';
+
+const productId = 11;
+if (isDamacana(productId)) {
+  console.log('This is a damacana product');
+}
+```
+
+<ParamField path="productId" type="number | string" required>
+  Product ID to check
+</ParamField>
+
+<ParamField path="returns" type="boolean">
+  Returns `true` if the ID matches the damacana pattern (ends with 1)
+</ParamField>
+
+<ResponseField name="Pattern Matching">
+  Uses regex `/1$/` to match IDs ending with 1:
+  - **Damacana IDs:** 11, 21, 31, 41, 51, 61, 71, 81
+  - **Non-damacana:** 12, 23, 34, etc.
+  
+  Console logs result for debugging: `"Damacana Check: ID 11 -> DAMACANA"`
+</ResponseField>
+
+---
+
+### isDamacanaOrderAllowed()
+
+Checks whether damacana orders are currently allowed based on time restrictions.
+
+```javascript
+import { isDamacanaOrderAllowed } from '@/config/damacanaLimits';
+
+const checkDamacana = () => {
+  const result = isDamacanaOrderAllowed();
+  
+  if (!result.isAllowed) {
+    alert(result.message);
+  }
+};
+```
+
+<ParamField path="returns" type="object">
+  Validation result object
+</ParamField>
+
+<Expandable title="Return Object Structure">
+  <ResponseField name="isAllowed" type="boolean">
+    Whether damacana orders are allowed
+  </ResponseField>
+  
+  <ResponseField name="message" type="string | null">
+    Error message if not allowed, `null` if allowed
+  </ResponseField>
+</Expandable>
+
+<ResponseField name="Behavior">
+  - Returns `{ isAllowed: true }` if `enabled` is false or `testMode` is true
+  - Checks if current time is in restricted period (after cutoff or before start time)
+  - Uses different cutoff times for weekdays vs weekends (if `weekendEnabled` is true)
+  - Extensive console logging for debugging time calculations
+</ResponseField>
+
+---
+
+### getDamacanaOrderHoursText()
+
+Returns formatted string of damacana order hours.
+
+```javascript
+import { getDamacanaOrderHoursText } from '@/config/damacanaLimits';
+
+const hours = getDamacanaOrderHoursText();
+console.log(hours); // "08:30 - 19:00"
+// or with weekend hours:
+// "Hafta içi: 08:30 - 19:00, Hafta sonu: 08:30 - 18:00"
+```
+
+<ParamField path="returns" type="string">
+  Formatted damacana order hours. Includes separate weekend hours if `weekendEnabled` is true
+</ParamField>
+
+---
+
+## Configuration
+
+### DAMACANA_LIMITS
+
+Damacana restrictions configuration object.
+
+```javascript
+import { DAMACANA_LIMITS } from '@/config/damacanaLimits';
+
+console.log(DAMACANA_LIMITS.cutoffHour); // 19
+```
+
+<Expandable title="Configuration Properties">
+  <ResponseField name="cutoffHour" type="number" default={19}>
+    Hour when damacana orders stop being accepted (24-hour format)
+  </ResponseField>
+  
+  <ResponseField name="cutoffMinute" type="number" default={0}>
+    Minute component of cutoff time
+  </ResponseField>
+  
+  <ResponseField name="startHour" type="number" default={8}>
+    Hour when damacana orders start being accepted next day (24-hour format)
+  </ResponseField>
+  
+  <ResponseField name="startMinute" type="number" default={30}>
+    Minute component of start time
+  </ResponseField>
+  
+  <ResponseField name="enabled" type="boolean" default={true}>
+    Whether damacana time restrictions are enabled
+  </ResponseField>
+  
+  <ResponseField name="cutoffMessage" type="string">
+    Message shown when orders are not allowed. Supports `{cutoffTime}` and `{startTime}` placeholders
+  </ResponseField>
+  
+  <ResponseField name="testMode" type="boolean" default={false}>
+    If true, time restrictions are disabled
+  </ResponseField>
+  
+  <ResponseField name="damacanaIdPattern" type="RegExp" default="/1$/">
+    Regex pattern to identify damacana products by ID
+  </ResponseField>
+  
+  <ResponseField name="weekendCutoffHour" type="number" default={18}>
+    Weekend cutoff hour (1 hour earlier than weekday)
+  </ResponseField>
+  
+  <ResponseField name="weekendCutoffMinute" type="number" default={0}>
+    Weekend cutoff minute
+  </ResponseField>
+  
+  <ResponseField name="weekendStartHour" type="number" default={8}>
+    Weekend start hour
+  </ResponseField>
+  
+  <ResponseField name="weekendStartMinute" type="number" default={30}>
+    Weekend start minute
+  </ResponseField>
+  
+  <ResponseField name="weekendEnabled" type="boolean" default={false}>
+    Whether to use different hours for weekends
+  </ResponseField>
+</Expandable>
+
+---
+
+## ID Pattern Matching
+
+Damacana products are identified by IDs ending with `1`:
+
+```javascript
+// Damacana products (ID ends with 1)
+11 → 19L Damacana ✓
+21 → 19L Damacana (2 pack) ✓
+31 → 19L Damacana (3 pack) ✓
+41, 51, 61, 71, 81 → All damacanas ✓
+
+// Non-damacana products
+12 → 6x1.5L Pack ✗
+23 → 12x0.5L Pack ✗
+```
+
+The pattern uses regex: `/1$/` which matches any ID ending with the digit 1.
+
+---
+
+## Usage Example
+
+```javascript
+import { 
+  checkCartForDamacana, 
+  isDamacana,
+  getDamacanaOrderHoursText 
+} from '@/config/damacanaLimits';
+import { useCart } from '@/context/CartContext';
+
+const OrderRestrictionAlert = () => {
+  const { items } = useCart();
+  const damacanaCheck = checkCartForDamacana(items);
+  
+  if (!damacanaCheck.hasDamacana) {
+    return null; // No damacana in cart
+  }
+  
+  if (!damacanaCheck.isAllowed) {
+    return (
+      <Alert severity="warning">
+        <p>{damacanaCheck.message}</p>
+        <p>Damacana sipariş saatleri: {getDamacanaOrderHoursText()}</p>
+        <p>Damacana ürünleri: {damacanaCheck.damacanaItems.length} adet</p>
+      </Alert>
+    );
+  }
+  
+  return null;
+};
+```
+
+---
+
+## Time Logic
+
+The damacana restriction creates a blocked time window:
+
+- **Blocked period:** After cutoff time until next day's start time
+- **Allowed period:** Start time to cutoff time
+
+Example with default settings:
+- **Blocked:** 19:00 - 08:30 (next day)
+- **Allowed:** 08:30 - 19:00
+
+The function handles midnight crossing automatically.

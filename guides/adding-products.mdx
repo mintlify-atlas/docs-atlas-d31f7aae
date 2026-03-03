@@ -1,0 +1,281 @@
+---
+title: 'Adding Products'
+description: 'Learn how to add and modify products in your water delivery application'
+icon: 'box'
+---
+
+## Overview
+
+Products in the Bİ DOLU İÇECEK application are managed through the `src/data/products.js` file. Each product can have multiple sub-products (variants) that customers can choose from.
+
+## Product Structure
+
+The application uses a two-level product hierarchy:
+
+- **Main Products**: Category-level products displayed on the home page (e.g., "Fuska Su", "Pınar Su")
+- **Sub-Products**: Specific variants within each main product (e.g., "19Lt Damacana", "24x0.5L Şişe")
+
+### Main Product Object
+
+Here's the structure of a main product:
+
+```javascript src/data/products.js
+{
+  id: 1,                                    // Unique identifier
+  name: "Fuska Su",                         // Product name
+  price: "Seçenekleri Görün",              // Display text (not actual price)
+  image: "/images/fuska.jpeg",              // Path to product image
+  imagePlaceholder: "🍓",                   // Emoji shown while image loads
+  whatsappMessage: "Merhaba Sultan Su sipariş etmek istiyorum. Adresim: ",
+  subProducts: [ /* array of sub-products */ ]
+}
+```
+
+### Sub-Product Object
+
+Each sub-product within a main product:
+
+```javascript src/data/products.js
+{
+  id: 11,                                   // Unique identifier
+  name: "Fuska Su 19Lt Damacana",          // Full product name
+  price: "160 TL",                         // Actual price
+  image: "/images/f19.png",                // Path to product image
+  imagePlaceholder: "🏺",                   // Emoji placeholder
+  whatsappMessage: "Merhaba Sultan Su 19L damacana sipariş etmek istiyorum. Adresim: "
+}
+```
+
+## Required Fields
+
+<Note>
+All product objects must include these required fields to work properly:
+</Note>
+
+| Field | Type | Description | Example |
+|-------|------|-------------|----------|
+| `id` | Number | Unique identifier | `1`, `11`, `21` |
+| `name` | String | Product display name | `"Fuska Su"` |
+| `price` | String | Price or text to display | `"160 TL"` or `"Seçenekleri Görün"` |
+| `image` | String | Path to product image | `"/images/fuska.jpeg"` |
+| `imagePlaceholder` | String | Emoji shown during loading | `"🍓"` |
+| `whatsappMessage` | String | Pre-filled WhatsApp message | `"Merhaba..."` |
+
+## Adding a New Product
+
+<Steps>
+  <Step title="Open products.js">
+    Navigate to `src/data/products.js` in your project.
+  </Step>
+
+  <Step title="Add product to array">
+    Add a new product object to the `PRODUCTS` array:
+
+    ```javascript src/data/products.js
+    export const PRODUCTS = [
+      // ... existing products
+      {
+        id: 10,                              // Use next available ID
+        name: "Saka Su",
+        price: "Seçenekleri Görün",
+        image: "/images/saka.jpeg",
+        imagePlaceholder: "💧",
+        whatsappMessage: "Merhaba Saka Su sipariş etmek istiyorum. Adresim: ",
+        subProducts: []
+      }
+    ];
+    ```
+  </Step>
+
+  <Step title="Add sub-products">
+    Create sub-product variants within the `subProducts` array:
+
+    ```javascript src/data/products.js
+    subProducts: [
+      {
+        id: 101,
+        name: "Saka Su 19Lt Damacana",
+        price: "150 TL",
+        image: "/images/saka-19.png",
+        imagePlaceholder: "🏺",
+        whatsappMessage: "Merhaba Saka Su 19L damacana sipariş etmek istiyorum. Adresim: "
+      },
+      {
+        id: 102,
+        name: "Saka Su 24x0.5L Şişe",
+        price: "180 TL",
+        image: "/images/saka-24.png",
+        imagePlaceholder: "🍼",
+        whatsappMessage: "Merhaba Saka Su 24x0.5L şişe sipariş etmek istiyorum. Adresim: "
+      }
+    ]
+    ```
+  </Step>
+
+  <Step title="Add product images">
+    Place your product images in the `public/images/` directory. See [Adding Images](/guides/adding-images) for details.
+  </Step>
+
+  <Step title="Test the product">
+    Run your development server and verify the product appears correctly:
+
+    ```bash
+    npm start
+    ```
+  </Step>
+</Steps>
+
+## Product ID Best Practices
+
+<Warning>
+Product IDs must be unique across all products and sub-products to avoid conflicts.
+</Warning>
+
+### ID Naming Convention
+
+Follow these patterns for consistent ID management:
+
+**Main Products**: Use simple incremental numbers
+```javascript
+id: 1   // Fuska Su
+id: 2   // Pınar Su
+id: 3   // Buzdağı Su
+```
+
+**Sub-Products**: Use main product ID as prefix
+```javascript
+// Fuska Su (id: 1) sub-products
+id: 11  // Fuska Su 19Lt Damacana
+id: 12  // Fuska Su 15Lt Cam Damacana (if exists)
+id: 13  // Fuska Su 24x0.5L Şişe
+
+// Pınar Su (id: 2) sub-products
+id: 21  // Pınar Su 19Lt Damacana
+id: 22  // Pınar Su 15Lt Cam Damacana
+id: 23  // Pınar Su 24x0.5L Şişe
+```
+
+### Special ID Pattern: Damacana Products
+
+<Tip>
+Damacana (water jug) products use IDs ending in `1` for time-based ordering restrictions.
+</Tip>
+
+Products with IDs matching the pattern `/1$/` (ending in 1) are treated as damacana products:
+
+```javascript
+id: 11  // Fuska Su 19Lt Damacana ✓ (recognized as damacana)
+id: 21  // Pınar Su 19Lt Damacana ✓ (recognized as damacana)
+id: 91  // Pınar Su 15Lt Cam Damacana ✓ (recognized as damacana)
+id: 13  // Fuska Su 24x0.5L Şişe ✗ (NOT damacana)
+```
+
+These products have ordering hour restrictions configured in `src/config/damacanaLimits.js`.
+
+## Real Example from Codebase
+
+Here's a complete product example from the actual codebase:
+
+```javascript src/data/products.js
+{
+  id: 1,
+  name: "Fuska Su",
+  price: "Seçenekleri Görün",
+  image: "/images/fuska.jpeg",
+  imagePlaceholder: "🍓",
+  whatsappMessage: "Merhaba Sultan Su sipariş etmek istiyorum. Adresim: ",
+  subProducts: [
+    {
+      id: 11,
+      name: "Fuska Su 19Lt Damacana",
+      price: "160 TL",
+      image: "/images/f19.png",
+      imagePlaceholder: "🏺",
+      whatsappMessage: "Merhaba Sultan Su 19L damacana sipariş etmek istiyorum. Adresim: "
+    },
+    {
+      id: 13,
+      name: "Fuska Su 24x0.5L Şişe",
+      price: "200 TL",
+      image: "/images/f1204.jpeg",
+      imagePlaceholder: "🍼",
+      whatsappMessage: "Merhaba Sultan Su 1.5L şişe sipariş etmek istiyorum. Adresim: "
+    },
+    {
+      id: 14,
+      name: "Fuska Su 12x1Lt Şişe",
+      price: "200 TL",
+      image: "/images/f121.jpeg",
+      imagePlaceholder: "🥤",
+      whatsappMessage: "Merhaba Sultan Su 500ml şişe sipariş etmek istiyorum. Adresim: "
+    }
+  ]
+}
+```
+
+## Modifying Existing Products
+
+<Steps>
+  <Step title="Locate the product">
+    Find the product in `src/data/products.js` by searching for the product name or ID.
+  </Step>
+
+  <Step title="Update fields">
+    Modify any field you need:
+
+    ```javascript
+    {
+      id: 11,
+      name: "Fuska Su 19Lt Damacana",
+      price: "175 TL",  // Updated price
+      // ... other fields
+    }
+    ```
+  </Step>
+
+  <Step title="Save and test">
+    Save the file and refresh your browser to see the changes.
+  </Step>
+</Steps>
+
+## Common Patterns
+
+### Empty Sub-Products
+
+If a main product has no variants yet, use an empty array:
+
+```javascript
+subProducts: []
+```
+
+### Placeholder Emojis
+
+Choose relevant emojis for visual appeal:
+
+- Water jugs/damacana: 🏺, 🪣
+- Bottles: 🍼, 🥤, 🍶
+- Water/liquid: 💧, 💦, 🌊
+- Luxury/premium: 💎, ✨, 👑
+
+### WhatsApp Message Templates
+
+Keep messages consistent and pre-filled:
+
+```javascript
+// Main product message
+whatsappMessage: "Merhaba [Brand Name] sipariş etmek istiyorum. Adresim: "
+
+// Sub-product message
+whatsappMessage: "Merhaba [Brand Name] [Size/Type] sipariş etmek istiyorum. Adresim: "
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Adding Images" icon="image" href="/guides/adding-images">
+    Learn how to add product images to your application
+  </Card>
+  <Card title="Styling Products" icon="palette" href="/guides/styling">
+    Customize how products look and feel
+  </Card>
+</CardGroup>

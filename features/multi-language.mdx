@@ -1,0 +1,497 @@
+---
+title: 'Multi-Language Support'
+description: 'Turkish and Arabic language support with dynamic switching'
+icon: 'language'
+---
+
+The platform supports multiple languages (Turkish and Arabic) with a simple translation system and language switcher.
+
+## Supported Languages
+
+Currently supported languages:
+
+- **Turkish (Türkçe)** 🇹🇷 - Default language
+- **Arabic (العربية)** 🇸🇦
+
+<Note>
+The default language is Turkish. Language preference is saved in localStorage.
+</Note>
+
+## Language Configuration
+
+Languages are configured in `src/config/language.js`:
+
+```javascript src/config/language.js
+export const LANGUAGES = {
+  tr: {
+    code: 'tr',
+    name: 'Türkçe',
+    flag: '🇹🇷',
+    translations: {
+      // Product page
+      seeOptions: "Seçenekleri Görün",
+      addToCart: "Sepete Ekle",
+      productDescription: "Ürün seçeneklerini inceleyin ve sipariş verin.",
+      clickToOrder: "Ürüne tıklayarak WhatsApp ile sipariş verebilirsiniz",
+      
+      // Order button
+      orderButton: "Sipariş Ver",
+      orderUnavailable: "Servis Saatleri Dışındadır",
+      
+      // Minimum order
+      minimumOrder: "Minimum sepet tutarı {minimumAmount} TL'dir",
+      currentCart: "Şu anki sepet: {amount} TL",
+      
+      // Welcome message
+      welcomeMessage: "Lütfen ilk siparişinizde adresinizi eklemeyi unutmayın, Teşekkürler.",
+      understood: "Anladım",
+      
+      // Scroll indicator
+      scrollDown: "Kaydır"
+    }
+  },
+  ar: {
+    code: 'ar',
+    name: 'العربية',
+    flag: '🇸🇦',
+    translations: {
+      // Product page
+      seeOptions: "انظر الخيارات",
+      addToCart: "أضف إلى السلة",
+      productDescription: "تعرف على خيارات المنتج واطلبه.",
+      clickToOrder: "يمكنكم الطلب عبر الواتساب بالضغط على المنتج.",
+      
+      // Order button
+      orderButton: "اطلب",
+      orderUnavailable: "خارج ساعات الخدمة",
+      
+      // Minimum order
+      minimumOrder: "الحد الأدنى للسلة {minimumAmount} ليرة تركية",
+      currentCart: "السلة الحالية: {amount} ليرة تركية",
+      
+      // Welcome message
+      welcomeMessage: "يرجى عدم نسيان إضافة عنوانكم في طلبكم الأول، شكراً.",
+      understood: "فهمت",
+      
+      // Scroll indicator
+      scrollDown: "تمرر"
+    }
+  }
+};
+
+export const DEFAULT_LANGUAGE = 'tr';
+```
+
+## Translation System
+
+### Get Translation
+
+Use the `t()` function to get translations:
+
+```javascript src/config/language.js
+export const t = (key, params = {}) => {
+  const lang = getCurrentLanguage();
+  const translation = LANGUAGES[lang]?.translations[key] || 
+                      LANGUAGES[DEFAULT_LANGUAGE]?.translations[key] || 
+                      key;
+  
+  // Replace parameters
+  let result = translation;
+  Object.keys(params).forEach(param => {
+    result = result.replace(`{${param}}`, params[param]);
+  });
+  
+  return result;
+};
+```
+
+**Usage Examples:**
+
+<CodeGroup>
+
+```javascript Simple Translation
+import { t } from '../config/language';
+
+const buttonText = t('addToCart');
+// Turkish: "Sepete Ekle"
+// Arabic: "أضف إلى السلة"
+```
+
+```javascript With Parameters
+const message = t('minimumOrder', { minimumAmount: 200 });
+// Turkish: "Minimum sepet tutarı 200 TL'dir"
+// Arabic: "الحد الأدنى للسلة 200 ليرة تركية"
+```
+
+```javascript In JSX
+<button>{t('orderButton')}</button>
+```
+
+</CodeGroup>
+
+## Language Management
+
+### Current Language State
+
+```javascript src/config/language.js
+let currentLanguage = DEFAULT_LANGUAGE;
+
+export const getCurrentLanguage = () => {
+  // Check localStorage on first load
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('suapp-language');
+    if (saved && LANGUAGES[saved]) {
+      currentLanguage = saved;
+    }
+  }
+  return currentLanguage;
+};
+```
+
+### Toggle Language
+
+Switch between Turkish and Arabic:
+
+```javascript src/config/language.js
+export const toggleLanguage = () => {
+  currentLanguage = currentLanguage === 'tr' ? 'ar' : 'tr';
+  
+  // Save to localStorage
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('suapp-language', currentLanguage);
+  }
+  
+  return currentLanguage;
+};
+```
+
+### Get Language Info
+
+```javascript src/config/language.js
+export const getCurrentLanguageInfo = () => {
+  const lang = getCurrentLanguage();
+  return LANGUAGES[lang];
+};
+```
+
+**Returns:**
+```javascript
+{
+  code: 'tr',
+  name: 'Türkçe',
+  flag: '🇹🇷',
+  translations: { ... }
+}
+```
+
+## Language Switcher Component
+
+Create a language switcher:
+
+```javascript LanguageSwitcher.js
+import { useState, useEffect } from 'react';
+import { toggleLanguage, getCurrentLanguageInfo } from '../config/language';
+
+function LanguageSwitcher() {
+  const [langInfo, setLangInfo] = useState(getCurrentLanguageInfo());
+
+  const handleToggle = () => {
+    const newLang = toggleLanguage();
+    setLangInfo(getCurrentLanguageInfo());
+    
+    // Force re-render of entire app
+    window.location.reload();
+  };
+
+  return (
+    <button onClick={handleToggle} className="language-switcher">
+      <span className="flag">{langInfo.flag}</span>
+      <span className="name">{langInfo.name}</span>
+    </button>
+  );
+}
+
+export default LanguageSwitcher;
+```
+
+<Tip>
+Reloading the page ensures all components re-render with the new language.
+</Tip>
+
+## Translation Keys Reference
+
+### Product Page
+
+| Key | Turkish | Arabic |
+|-----|---------|--------|
+| `seeOptions` | Seçenekleri Görün | انظر الخيارات |
+| `addToCart` | Sepete Ekle | أضف إلى السلة |
+| `productDescription` | Ürün seçeneklerini inceleyin... | تعرف على خيارات المنتج... |
+| `clickToOrder` | Ürüne tıklayarak WhatsApp... | يمكنكم الطلب عبر الواتساب... |
+
+### Order Button
+
+| Key | Turkish | Arabic |
+|-----|---------|--------|
+| `orderButton` | Sipariş Ver | اطلب |
+| `orderUnavailable` | Servis Saatleri Dışındadır | خارج ساعات الخدمة |
+
+### Validation Messages
+
+| Key | Turkish | Arabic |
+|-----|---------|--------|
+| `minimumOrder` | Minimum sepet tutarı {minimumAmount} TL'dir | الحد الأدنى للسلة {minimumAmount} ليرة تركية |
+| `currentCart` | Şu anki sepet: {amount} TL | السلة الحالية: {amount} ليرة تركية |
+| `damacanaRestricted` | Damacana siparişleri {cutoffTime}'dan sonra... | لا يتم قبول طلبات Demijohn بعد {cutoffTime} |
+
+### UI Elements
+
+| Key | Turkish | Arabic |
+|-----|---------|--------|
+| `welcomeMessage` | Lütfen ilk siparişinizde... | يرجى عدم نسيان إضافة... |
+| `understood` | Anladım | فهمت |
+| `scrollDown` | Kaydır | تمرر |
+
+## Adding New Translations
+
+To add a new translation key:
+
+1. **Add to Turkish translations:**
+```javascript src/config/language.js
+tr: {
+  translations: {
+    // ... existing translations
+    newKey: "Yeni Çeviri"
+  }
+}
+```
+
+2. **Add to Arabic translations:**
+```javascript src/config/language.js
+ar: {
+  translations: {
+    // ... existing translations
+    newKey: "ترجمة جديدة"
+  }
+}
+```
+
+3. **Use in component:**
+```javascript
+import { t } from '../config/language';
+
+<p>{t('newKey')}</p>
+```
+
+## Adding New Languages
+
+To add support for a new language:
+
+```javascript src/config/language.js
+export const LANGUAGES = {
+  tr: { /* ... */ },
+  ar: { /* ... */ },
+  en: {
+    code: 'en',
+    name: 'English',
+    flag: '🇬🇧',
+    translations: {
+      seeOptions: "See Options",
+      addToCart: "Add to Cart",
+      productDescription: "Browse product options and order.",
+      clickToOrder: "Click the product to order via WhatsApp",
+      orderButton: "Place Order",
+      orderUnavailable: "Outside Service Hours",
+      minimumOrder: "Minimum cart amount is {minimumAmount} TL",
+      currentCart: "Current cart: {amount} TL",
+      welcomeMessage: "Please don't forget to add your address on your first order. Thank you.",
+      understood: "Understood",
+      scrollDown: "Scroll"
+    }
+  }
+};
+```
+
+Update the toggle function for multiple languages:
+
+```javascript
+const languages = ['tr', 'ar', 'en'];
+
+export const toggleLanguage = () => {
+  const currentIndex = languages.indexOf(currentLanguage);
+  const nextIndex = (currentIndex + 1) % languages.length;
+  currentLanguage = languages[nextIndex];
+  
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('suapp-language', currentLanguage);
+  }
+  
+  return currentLanguage;
+};
+```
+
+## RTL Support (Arabic)
+
+For proper Arabic display, add RTL support:
+
+```css styles.css
+html[lang="ar"] {
+  direction: rtl;
+}
+
+html[lang="ar"] .modal-close-btn {
+  left: 1rem;
+  right: auto;
+}
+
+html[lang="ar"] .quantity-controls {
+  flex-direction: row-reverse;
+}
+```
+
+Set the `lang` attribute dynamically:
+
+```javascript App.js
+import { getCurrentLanguage } from './config/language';
+
+useEffect(() => {
+  document.documentElement.setAttribute('lang', getCurrentLanguage());
+}, []);
+```
+
+## Integration Examples
+
+### Order Button with Translation
+
+```javascript src/components/OrderButton.js
+import { t } from '../config/language';
+
+const OrderButton = () => {
+  const { getTotalItems, getTotalPrice } = useCart();
+  const totalItems = getTotalItems();
+  const totalPrice = getTotalPrice();
+
+  return (
+    <button className="order-button">
+      {t('orderButton')} - {totalPrice.toFixed(2)} TL
+    </button>
+  );
+};
+```
+
+### Product Modal with Translation
+
+```javascript src/components/ProductModal.js
+import { t } from '../config/language';
+
+const ProductModal = ({ product, isOpen, onClose }) => {
+  return (
+    <div className="modal-content">
+      <div className="modal-header">
+        <h2>{product.name}</h2>
+        <p>{t('productDescription')}</p>
+      </div>
+      
+      <div className="modal-footer">
+        <p>💬 {t('clickToOrder')}</p>
+      </div>
+    </div>
+  );
+};
+```
+
+### Validation Messages
+
+```javascript ValidationMessage.js
+import { t } from '../config/language';
+import { ORDER_LIMITS } from '../config/orderLimits';
+
+function ValidationMessage({ totalPrice }) {
+  if (totalPrice < ORDER_LIMITS.minimumOrderAmount) {
+    return (
+      <div className="validation-error">
+        {t('minimumOrder', { minimumAmount: ORDER_LIMITS.minimumOrderAmount })}
+        <br />
+        {t('currentCart', { amount: totalPrice.toFixed(2) })}
+      </div>
+    );
+  }
+  return null;
+}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+
+<Card title="Consistent Keys" icon="key">
+Use descriptive, consistent translation keys across the application.
+</Card>
+
+<Card title="Fallback Text" icon="shield">
+Always provide fallback to default language if translation is missing.
+</Card>
+
+<Card title="Parameter Naming" icon="brackets-curly">
+Use clear parameter names like `{minimumAmount}` instead of `{0}` or `{x}`.
+</Card>
+
+<Card title="Context Matters" icon="comment">
+Provide context-appropriate translations, not just literal word-for-word translations.
+</Card>
+
+</CardGroup>
+
+## LocalStorage Persistence
+
+The language preference is saved automatically:
+
+```javascript
+// Saved on toggle
+localStorage.setItem('suapp-language', 'ar');
+
+// Retrieved on page load
+const savedLang = localStorage.getItem('suapp-language');
+```
+
+<Note>
+Language preference persists across browser sessions using localStorage.
+</Note>
+
+## Troubleshooting
+
+### Translations Not Updating
+
+```javascript
+// Force reload after language change
+window.location.reload();
+```
+
+### Missing Translation
+
+```javascript
+// The t() function falls back to the key itself
+const text = t('nonExistentKey');
+// Returns: "nonExistentKey"
+```
+
+### Clear Language Cache
+
+```javascript
+localStorage.removeItem('suapp-language');
+window.location.reload();
+```
+
+## Related Documentation
+
+<CardGroup cols={2}>
+
+<Card title="WhatsApp Ordering" icon="whatsapp" href="/features/whatsapp-ordering">
+See how multi-language support integrates with order messages
+</Card>
+
+<Card title="Product Catalog" icon="box-open" href="/features/product-catalog">
+Learn about product display with translations
+</Card>
+
+</CardGroup>

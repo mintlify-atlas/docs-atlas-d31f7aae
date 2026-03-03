@@ -1,0 +1,599 @@
+---
+title: 'OrderButton Component'
+description: 'Smart floating order button with service hours validation, minimum order checks, and WhatsApp integration'
+icon: 'cart-shopping'
+---
+
+## Overview
+
+The `OrderButton` component is a floating action button that displays the cart summary and allows users to place orders via WhatsApp. It includes intelligent validation for service hours, minimum order amounts, and damacana restrictions.
+
+## Component Location
+
+**File**: `src/components/OrderButton.js`
+
+## Features
+
+- **Cart Summary**: Displays total items and price
+- **Service Hours Validation**: Only allows orders during business hours (8:30-20:30)
+- **Minimum Order Check**: Enforces 400 TL minimum order requirement
+- **Damacana Restrictions**: Prevents damacana orders after 19:00
+- **WhatsApp Integration**: Opens WhatsApp with formatted order message
+- **Auto-refresh**: Checks service status every minute
+- **Internationalization**: Supports multiple languages
+
+## Dependencies
+
+```javascript
+import { useCart } from '../context/CartContext';
+import { openWhatsApp } from '../config/whatsapp';
+import { trackWhatsAppClick, trackError } from '../utils/analytics';
+import { isServiceOpen, getServiceHoursText, getStoreStatus } from '../config/serviceHours';
+import { validateOrderAmount, ORDER_LIMITS } from '../config/orderLimits';
+import { checkCartForDamacana } from '../config/damacanaLimits';
+import { t } from '../config/language';
+```
+
+## Cart Context Integration
+
+The component uses the `useCart` hook to access cart state:
+
+```javascript
+const { getTotalItems, getTotalPrice, getCartMessage, clearCart, items } = useCart();
+const totalItems = getTotalItems();
+const totalPrice = getTotalPrice();
+```
+
+### Cart Methods Used
+
+<ParamField path="getTotalItems" type="function">
+  Returns the total number of items in cart
+  
+  ```javascript
+  getTotalItems() => number
+  ```
+</ParamField>
+
+<ParamField path="getTotalPrice" type="function">
+  Returns the total price of all cart items
+  
+  ```javascript
+  getTotalPrice() => number
+  ```
+</ParamField>
+
+<ParamField path="getCartMessage" type="function">
+  Generates formatted order message for WhatsApp
+  
+  ```javascript
+  getCartMessage() => string
+  // Example: "2 adet - 19L Damacana\n1 adet - 5L Pet\nsipariş etmek istiyorum."
+  ```
+</ParamField>
+
+<ParamField path="clearCart" type="function">
+  Clears all items from cart after successful order
+  
+  ```javascript
+  clearCart() => void
+  ```
+</ParamField>
+
+<ParamField path="items" type="array">
+  Array of cart items for validation checks
+</ParamField>
+
+## State Management
+
+### Local State
+
+```javascript
+const [serviceOpen, setServiceOpen] = useState(false);
+const [storeStatus, setStoreStatus] = useState(null);
+```
+
+### Service Status Checks
+
+The component performs three validation checks:
+
+#### 1. Service Hours Validation
+
+```javascript
+const orderValidation = validateOrderAmount(totalPrice);
+```
+
+**Service Hours** (from `src/config/serviceHours.js:4-26`):
+- **Start**: 08:30
+- **End**: 20:30
+- **Weekdays**: Enabled
+- **Weekends**: Enabled
+
+#### 2. Minimum Order Validation
+
+```javascript
+const orderValidation = validateOrderAmount(totalPrice);
+```
+
+**Order Limits** (from `src/config/orderLimits.js:2-17`):
+- **Minimum**: 400 TL
+- **Maximum**: None (null)
+
+#### 3. Damacana Restrictions
+
+```javascript
+const damacanaValidation = checkCartForDamacana(items);
+```
+
+**Damacana Rules** (from `src/config/damacanaLimits.js:2-30`):
+- **Cutoff**: 19:00 (no orders after)
+- **Start**: 08:30 (orders accepted from)
+- **Applies to**: Products with IDs ending in "1"
+
+## Auto-Refresh Service Status
+
+The button checks service status every minute:
+
+```javascript
+useEffect(() => {
+  const checkServiceStatus = async () => {
+    const isOpen = await isServiceOpen();
+    const status = getStoreStatus();
+    setServiceOpen(isOpen);
+    setStoreStatus(status);
+  };
+
+  // Initial check
+  checkServiceStatus();
+
+  // Check every minute
+  const interval = setInterval(checkServiceStatus, 60000);
+
+  return () => clearInterval(interval);
+}, []);
+```
+
+<Tip>
+The 60-second interval ensures the button state updates automatically when transitioning into or out of service hours without requiring a page refresh.
+</Tip>
+
+## Usage Example
+
+### Basic Implementation
+
+```javascript
+import React from 'react';
+import { CartProvider } from './context/CartContext';
+import OrderButton from './components/OrderButton';
+
+function App() {
+  return (
+    <CartProvider>
+      <div className="App">
+        {/* Your app content */}
+        <OrderButton />
+      </div>
+    </CartProvider>
+  );
+}
+```
+
+<Warning>
+The `OrderButton` **must** be wrapped in a `CartProvider` to access cart state. It will throw an error if used outside the provider.
+</Warning>
+
+### With Product Display
+
+```javascript
+import { CartProvider } from './context/CartContext';
+import ProductCard from './components/ProductCard';
+import OrderButton from './components/OrderButton';
+import { PRODUCTS } from './data/products';
+
+function App() {
+  return (
+    <CartProvider>
+      <div className="App">
+        <main className="main-content">
+          <div className="products-grid">
+            {PRODUCTS.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </main>
+        
+        <OrderButton />
+      </div>
+    </CartProvider>
+  );
+}
+```
+
+## Order Flow
+
+### Click Handler Logic
+
+```javascript
+const handleOrderClick = async () => {
+  // Validation checks
+  if (!serviceOpen || !orderValidation.isValid || !damacanaValidation.isAllowed) {
+    return; // Button disabled, prevent action
+  }
+
+  try {
+    const message = getCartMessage();
+    
+    // Track analytics
+    trackWhatsAppClick('Sepet Siparişi');
+    
+    // Open WhatsApp with message
+    openWhatsApp('Sepet Siparişi', message);
+    
+    // Clear cart on success
+    clearCart();
+  } catch (error) {
+    trackError(error, 'Order Button Click Handler');
+    
+    // Fallback: Direct WhatsApp link
+    const message = getCartMessage();
+    const fallbackUrl = `https://wa.me/905551234567?text=${encodeURIComponent(message)}`;
+    window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
+    
+    clearCart();
+  }
+};
+```
+
+### WhatsApp Message Format
+
+```javascript
+// Example cart message:
+"2 adet - 19L Damacana
+1 adet - 5L Pet Şişe
+3 adet - Kola 1L
+sipariş etmek istiyorum."
+```
+
+## Button States
+
+The button displays different states based on validation:
+
+### 1. Active State (All validations pass)
+
+```jsx
+<button className="order-button">
+  <span className="order-button-icon">🛒</span>
+  <span className="order-button-text">
+    Sipariş Ver - 450.00 TL
+  </span>
+  <span className="order-button-count">5 ürün</span>
+</button>
+```
+
+### 2. Service Closed State
+
+```jsx
+<button className="order-button order-button-disabled" disabled>
+  <span className="order-button-icon">🚫</span>
+  <span className="order-button-text">
+    Servis Kapalı
+  </span>
+  <div className="order-button-hours">
+    Servis Saatleri: 08:30 - 20:30
+  </div>
+</button>
+```
+
+### 3. Minimum Order Not Met
+
+```jsx
+<button className="order-button order-button-disabled" disabled>
+  <span className="order-button-icon">🚫</span>
+  <span className="order-button-text">
+    Minimum 400 TL
+  </span>
+  <div className="order-button-hours">
+    Mevcut sepet: 250.00 TL
+  </div>
+</button>
+```
+
+### 4. Damacana Restricted
+
+```jsx
+<button className="order-button order-button-disabled" disabled>
+  <span className="order-button-icon">🚫</span>
+  <span className="order-button-text">
+    Damacana Sınırlı
+  </span>
+  <div className="order-button-hours">
+    Damacana siparişleri saat 19:00'dan sonra alınmaz
+  </div>
+</button>
+```
+
+## Button Visibility
+
+The button only renders when there are items in the cart:
+
+```javascript
+if (totalItems === 0) return null;
+```
+
+<Tip>
+This prevents the button from cluttering the UI when the cart is empty, providing a cleaner user experience.
+</Tip>
+
+## Accessibility
+
+### ARIA Labels
+
+Dynamic labels describe button state:
+
+```jsx
+aria-label={
+  !serviceOpen 
+    ? `Servis saatleri dışında, ${getServiceHoursText()}`
+    : !orderValidation.isValid
+      ? orderValidation.message
+      : !damacanaValidation.isAllowed
+        ? damacanaValidation.message
+        : `${totalItems} ürün ile sipariş ver`
+}
+```
+
+### Disabled State
+
+```javascript
+const isButtonDisabled = !serviceOpen || !orderValidation.isValid || !damacanaValidation.isAllowed;
+```
+
+```jsx
+<button disabled={isButtonDisabled}>
+```
+
+## Store Status Edge Cases
+
+The component handles special store closure scenarios:
+
+### Temporary Closure
+
+```javascript
+storeStatus?.temporarilyClosed 
+  ? 'Geçici Olarak Kapalı'
+  : // ... other states
+```
+
+### Maintenance Mode
+
+```javascript
+storeStatus?.maintenanceMode
+  ? 'Bakım Modunda'
+  : // ... other states
+```
+
+### Custom Reason
+
+```javascript
+{!serviceOpen && storeStatus?.reason && (
+  <div className="order-button-hours">
+    {storeStatus.reason}
+  </div>
+)}
+```
+
+## Internationalization
+
+The button supports language switching:
+
+```javascript
+import { t } from '../config/language';
+
+// Translations used:
+t('orderUnavailable')          // "Sipariş Alınamıyor" / "Order Unavailable"
+t('minimumOrder', { ... })     // "Minimum 400 TL" / "Minimum 400 TL"
+t('damacanaRestricted', { ... }) // "Damacana Sınırlı" / "Damacana Restricted"
+t('orderButton')               // "Sipariş Ver" / "Place Order"
+t('currentCart', { ... })      // "Mevcut sepet: X TL" / "Current cart: X TL"
+```
+
+## Analytics Tracking
+
+The component tracks two events:
+
+### 1. WhatsApp Click
+
+```javascript
+trackWhatsAppClick('Sepet Siparişi');
+```
+
+### 2. Error Tracking
+
+```javascript
+trackError(error, 'Order Button Click Handler');
+```
+
+## Styling
+
+### CSS Classes
+
+```css
+.order-button-container {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 100;
+}
+
+.order-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.order-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+.order-button-disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+```
+
+### Responsive Design
+
+```css
+@media (max-width: 768px) {
+  .order-button-container {
+    bottom: 1rem;
+    right: 1rem;
+    left: 1rem;
+  }
+  
+  .order-button {
+    width: 100%;
+  }
+}
+```
+
+## Complete Source Code
+
+```javascript src/components/OrderButton.js
+import React, { useState, useEffect } from 'react';
+import { useCart } from '../context/CartContext';
+import { openWhatsApp } from '../config/whatsapp';
+import { trackWhatsAppClick, trackError } from '../utils/analytics';
+import { isServiceOpen, getServiceHoursText, getStoreStatus } from '../config/serviceHours';
+import { validateOrderAmount, ORDER_LIMITS } from '../config/orderLimits';
+import { checkCartForDamacana } from '../config/damacanaLimits';
+import { t } from '../config/language';
+
+const OrderButton = () => {
+  const { getTotalItems, getTotalPrice, getCartMessage, clearCart, items } = useCart();
+  const [serviceOpen, setServiceOpen] = useState(false);
+  const [storeStatus, setStoreStatus] = useState(null);
+  const totalItems = getTotalItems();
+  const totalPrice = getTotalPrice();
+  const orderValidation = validateOrderAmount(totalPrice);
+  const damacanaValidation = checkCartForDamacana(items);
+
+  useEffect(() => {
+    const checkServiceStatus = async () => {
+      const isOpen = await isServiceOpen();
+      const status = getStoreStatus();
+      setServiceOpen(isOpen);
+      setStoreStatus(status);
+    };
+
+    checkServiceStatus();
+    const interval = setInterval(checkServiceStatus, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (totalItems === 0) return null;
+
+  const handleOrderClick = async () => {
+    if (!serviceOpen || !orderValidation.isValid || !damacanaValidation.isAllowed) {
+      return;
+    }
+
+    try {
+      const message = getCartMessage();
+      trackWhatsAppClick('Sepet Siparişi');
+      openWhatsApp('Sepet Siparişi', message);
+      clearCart();
+    } catch (error) {
+      trackError(error, 'Order Button Click Handler');
+      const message = getCartMessage();
+      const fallbackUrl = `https://wa.me/905551234567?text=${encodeURIComponent(message)}`;
+      window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
+      clearCart();
+    }
+  };
+
+  const isButtonDisabled = !serviceOpen || !orderValidation.isValid || !damacanaValidation.isAllowed;
+  const buttonClass = isButtonDisabled ? 'order-button-disabled' : '';
+
+  return (
+    <div className="order-button-container">
+      <button 
+        onClick={handleOrderClick}
+        className={`order-button ${buttonClass}`}
+        disabled={isButtonDisabled}
+        aria-label={
+          !serviceOpen 
+            ? `Servis saatleri dışında, ${getServiceHoursText()}`
+            : !orderValidation.isValid
+              ? orderValidation.message
+              : !damacanaValidation.isAllowed
+                ? damacanaValidation.message
+                : `${totalItems} ürün ile sipariş ver`
+        }
+      >
+        <div className="order-button-content">
+          <span className="order-button-icon">
+            {serviceOpen ? '🛒' : '🚫'}
+          </span>
+          <span className="order-button-text">
+            {!serviceOpen
+              ? storeStatus?.temporarilyClosed 
+                ? 'Geçici Olarak Kapalı'
+                : storeStatus?.maintenanceMode
+                  ? 'Bakım Modunda'
+                  : t('orderUnavailable')
+              : !orderValidation.isValid
+                ? t('minimumOrder', { minimumAmount: ORDER_LIMITS.minimumOrderAmount })
+                : !damacanaValidation.isAllowed
+                  ? t('damacanaRestricted', { cutoffTime: '19:00' })
+                  : `${t('orderButton')} - ${totalPrice.toFixed(2)} TL`
+            }
+          </span>
+          {serviceOpen && orderValidation.isValid && damacanaValidation.isAllowed && (
+            <span className="order-button-count">{totalItems} ürün</span>
+          )}
+        </div>
+        {isButtonDisabled && (
+          <div className="order-button-hours">
+            {!serviceOpen
+              ? storeStatus?.reason 
+                ? storeStatus.reason
+                : `Servis Saatleri: ${getServiceHoursText()}`
+              : !orderValidation.isValid && totalPrice > 0
+                ? t('currentCart', { amount: totalPrice.toFixed(2) })
+                : !damacanaValidation.isAllowed && damacanaValidation.hasDamacana
+                  ? `Damacana siparişleri saat 19:00'dan sonra alınmaz`
+                  : ''
+            }
+          </div>
+        )}
+      </button>
+    </div>
+  );
+};
+
+export default OrderButton;
+```
+
+## Best Practices
+
+<Tip>
+**Auto-refresh**: The 60-second interval keeps the button state current without requiring manual page refreshes.
+</Tip>
+
+<Tip>
+**Cart clearing**: Always clear the cart after successful order placement to prevent duplicate orders.
+</Tip>
+
+<Warning>
+Never bypass validation checks - they enforce critical business rules like service hours and minimum orders.
+</Warning>
+
+## Related Components
+
+- [CartContext](/components/cart-context) - Provides cart state and methods
+- [ProductModal](/components/product-modal) - Adds items to cart
+- [ProductCard](/components/product-card) - Entry point for product selection

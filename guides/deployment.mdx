@@ -1,0 +1,504 @@
+---
+title: Deployment Options
+description: Deploy the Bİ DOLU İÇECEK application to production with various hosting platforms
+---
+
+## Overview
+
+The Bİ DOLU İÇECEK application is a static React app that can be deployed to various hosting platforms. This guide covers deployment to popular platforms and configuration requirements.
+
+## Prerequisites
+
+Before deploying, ensure you have:
+
+- Built the application (`npm run build`)
+- A Git repository with your code
+- An account on your chosen hosting platform
+
+<Note>
+  This application uses static hosting and doesn't require a server-side runtime. Any platform that can serve static files will work.
+</Note>
+
+## Deployment Platforms
+
+<Tabs>
+  <Tab title="Vercel (Recommended)">
+    Vercel offers the best integration for React applications with Edge Config support.
+
+    <Steps>
+      <Step title="Install Vercel CLI">
+        ```bash
+        npm install -g vercel
+        ```
+      </Step>
+
+      <Step title="Login to Vercel">
+        ```bash
+        vercel login
+        ```
+      </Step>
+
+      <Step title="Deploy the Project">
+        From your project directory:
+        ```bash
+        vercel
+        ```
+        
+        Follow the prompts:
+        - Link to existing project or create new
+        - Confirm project settings
+        - Deploy
+      </Step>
+
+      <Step title="Deploy to Production">
+        For production deployment:
+        ```bash
+        vercel --prod
+        ```
+      </Step>
+    </Steps>
+
+    ### Automatic Deployment
+
+    Connect your Git repository for automatic deployments:
+
+    1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+    2. Click "New Project"
+    3. Import your Git repository
+    4. Configure build settings:
+       - **Build Command:** `npm run build`
+       - **Output Directory:** `build`
+       - **Install Command:** `npm install`
+    5. Click "Deploy"
+
+    <Note>
+      Vercel automatically deploys on every push to your main branch, and creates preview deployments for pull requests.
+    </Note>
+  </Tab>
+
+  <Tab title="Netlify">
+    Netlify provides easy deployment with continuous integration.
+
+    <Steps>
+      <Step title="Install Netlify CLI">
+        ```bash
+        npm install -g netlify-cli
+        ```
+      </Step>
+
+      <Step title="Login to Netlify">
+        ```bash
+        netlify login
+        ```
+      </Step>
+
+      <Step title="Initialize and Deploy">
+        ```bash
+        netlify init
+        ```
+        
+        When prompted:
+        - **Build command:** `npm run build`
+        - **Publish directory:** `build`
+      </Step>
+
+      <Step title="Deploy to Production">
+        ```bash
+        netlify deploy --prod
+        ```
+      </Step>
+    </Steps>
+
+    ### Automatic Deployment
+
+    1. Go to [Netlify Dashboard](https://app.netlify.com/)
+    2. Click "New site from Git"
+    3. Connect your repository
+    4. Configure:
+       - **Build command:** `npm run build`
+       - **Publish directory:** `build`
+    5. Deploy site
+
+    ### Netlify Configuration File
+
+    Create `netlify.toml` in your project root:
+    ```toml
+    [build]
+      command = "npm run build"
+      publish = "build"
+
+    [[redirects]]
+      from = "/*"
+      to = "/index.html"
+      status = 200
+    ```
+  </Tab>
+
+  <Tab title="GitHub Pages">
+    Deploy directly from your GitHub repository.
+
+    <Steps>
+      <Step title="Install gh-pages">
+        ```bash
+        npm install --save-dev gh-pages
+        ```
+      </Step>
+
+      <Step title="Add Homepage to package.json">
+        Add the homepage field:
+        ```json
+        {
+          "homepage": "https://yourusername.github.io/repository-name",
+          "scripts": {
+            "predeploy": "npm run build",
+            "deploy": "gh-pages -d build"
+          }
+        }
+        ```
+      </Step>
+
+      <Step title="Deploy">
+        ```bash
+        npm run deploy
+        ```
+      </Step>
+    </Steps>
+
+    <Warning>
+      GitHub Pages may take a few minutes to update. Also note that Edge Config features require a backend and won't work with GitHub Pages alone.
+    </Warning>
+  </Tab>
+
+  <Tab title="Custom Server">
+    Deploy to any server that can serve static files.
+
+    <Steps>
+      <Step title="Build the Application">
+        ```bash
+        npm run build
+        ```
+      </Step>
+
+      <Step title="Copy Build Files">
+        Transfer the `build/` directory to your server:
+        ```bash
+        scp -r build/* user@server:/var/www/html/
+        ```
+      </Step>
+
+      <Step title="Configure Web Server">
+        For Apache, create/edit `.htaccess`:
+        ```apache
+        RewriteEngine On
+        RewriteBase /
+        RewriteRule ^index\.html$ - [L]
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule . /index.html [L]
+        ```
+
+        For Nginx:
+        ```nginx
+        location / {
+          try_files $uri $uri/ /index.html;
+        }
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Environment Variables
+
+Configure environment variables for your deployment:
+
+### Required Variables
+
+<Note>
+  For Vercel Edge Config integration, you'll need the `EDGE_CONFIG` environment variable.
+</Note>
+
+**EDGE_CONFIG** - Edge Config connection string (Vercel only)
+```bash
+EDGE_CONFIG=https://edge-config.vercel.com/[CONFIG_ID]?token=[TOKEN]
+```
+
+### Setting Environment Variables
+
+<Tabs>
+  <Tab title="Vercel">
+    1. Go to Project Settings → Environment Variables
+    2. Add variables for each environment:
+       - Production
+       - Preview
+       - Development
+    3. Redeploy for changes to take effect
+
+    Or via CLI:
+    ```bash
+    vercel env add EDGE_CONFIG production
+    ```
+  </Tab>
+
+  <Tab title="Netlify">
+    1. Go to Site Settings → Environment Variables
+    2. Add key-value pairs
+    3. Trigger a new deployment
+
+    Or via CLI:
+    ```bash
+    netlify env:set REACT_APP_API_URL https://api.example.com
+    ```
+  </Tab>
+
+  <Tab title="Local .env">
+    Create `.env.production.local`:
+    ```bash
+    REACT_APP_API_URL=https://api.example.com
+    ```
+
+    Build with environment file:
+    ```bash
+    npm run build
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+  Environment variables starting with `REACT_APP_` are embedded in the build at build-time. Never commit `.env` files containing secrets to version control.
+</Warning>
+
+## Edge Config Setup (Vercel)
+
+The application uses Vercel Edge Config for remote configuration of service hours, store status, and emergency messages.
+
+<Steps>
+  <Step title="Create Edge Config Store">
+    1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+    2. Navigate to Storage → Edge Config
+    3. Click "Create Edge Config"
+    4. Name it `suapp-config`
+  </Step>
+
+  <Step title="Configure Initial Data">
+    Click "Edit Items" and add the configuration:
+    ```json
+    {
+      "service_hours": {
+        "enabled": true,
+        "startHour": 8,
+        "startMinute": 30,
+        "endHour": 22,
+        "endMinute": 50,
+        "weekdaysEnabled": true,
+        "weekendsEnabled": true,
+        "closedDates": [],
+        "timezone": "Europe/Istanbul"
+      },
+      "store_status": {
+        "isOpen": true,
+        "temporarilyClosed": false,
+        "maintenanceMode": false,
+        "reason": ""
+      },
+      "emergency_message": {
+        "enabled": false,
+        "message": "",
+        "priority": "normal"
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Connect to Project">
+    1. In Edge Config, go to Tokens tab
+    2. Copy the Connection String
+    3. Add to Project Environment Variables:
+       - **Name:** `EDGE_CONFIG`
+       - **Value:** Your connection string
+       - **Environments:** All (Production, Preview, Development)
+  </Step>
+
+  <Step title="Redeploy Application">
+    ```bash
+    vercel --prod
+    ```
+  </Step>
+</Steps>
+
+### Edge Config Features
+
+With Edge Config, you can remotely control:
+
+1. **Service Hours** - Change opening/closing times without redeploying
+2. **Store Status** - Temporarily close the store or enable maintenance mode
+3. **Emergency Messages** - Display urgent notifications to customers
+
+<Note>
+  Edge Config changes propagate globally within 2 minutes and don't require rebuilding or redeploying the application.
+</Note>
+
+### Managing Edge Config
+
+**Temporarily Close Store:**
+```json
+{
+  "store_status": {
+    "isOpen": false,
+    "temporarilyClosed": true,
+    "reason": "Teknik bakım nedeniyle geçici olarak kapalıyız."
+  }
+}
+```
+
+**Update Service Hours:**
+```json
+{
+  "service_hours": {
+    "startHour": 9,
+    "endHour": 18,
+    "weekendsEnabled": false
+  }
+}
+```
+
+**Add Holiday Closures:**
+```json
+{
+  "service_hours": {
+    "closedDates": ["2024-01-01", "2024-12-25"]
+  }
+}
+```
+
+See `src/config/edgeConfig.js:1` for implementation details.
+
+## Post-Deployment Checklist
+
+After deploying, verify:
+
+<Steps>
+  <Step title="Check Application Loads">
+    - Visit your deployment URL
+    - Verify the homepage loads correctly
+    - Test navigation between sections
+  </Step>
+
+  <Step title="Test Core Features">
+    - Product selection and cart functionality
+    - WhatsApp order integration
+    - Service hours display
+    - Responsive design on mobile
+  </Step>
+
+  <Step title="Verify Edge Config (Vercel)">
+    - Check browser console for Edge Config logs
+    - Test service hours enforcement
+    - Verify store status updates
+  </Step>
+
+  <Step title="Performance Check">
+    - Run [Lighthouse](https://developers.google.com/web/tools/lighthouse) audit
+    - Check page load times
+    - Test on various devices and networks
+  </Step>
+</Steps>
+
+## Common Deployment Issues
+
+### Blank Page After Deployment
+
+**Cause:** Incorrect base URL or routing configuration
+
+**Solution:**
+- Check `homepage` in `package.json`
+- Ensure server redirects all routes to `index.html`
+- Verify build output in deployment logs
+
+### Assets Not Loading
+
+**Cause:** Incorrect asset paths
+
+**Solution:**
+- Use relative imports: `import logo from './logo.png'`
+- Place static assets in `public/` folder
+- Reference public assets with `process.env.PUBLIC_URL`
+
+### Environment Variables Not Working
+
+**Cause:** Variables not prefixed or not set at build time
+
+**Solution:**
+- Prefix with `REACT_APP_`
+- Set variables before building
+- Redeploy after changing variables
+
+### Edge Config Not Loading
+
+**Cause:** Missing or incorrect connection string
+
+**Solution:**
+```bash
+# Verify environment variable is set
+vercel env ls
+
+# Check connection string format
+EDGE_CONFIG=https://edge-config.vercel.com/[ID]?token=[TOKEN]
+
+# Redeploy with correct variable
+vercel --prod
+```
+
+<Warning>
+  If Edge Config fails to load, the application will fall back to local configuration in `src/config/serviceHours.js`. Check browser console for Edge Config error messages.
+</Warning>
+
+## Continuous Deployment
+
+Set up automatic deployments for a seamless workflow:
+
+<Steps>
+  <Step title="Connect Git Repository">
+    Link your hosting platform to your Git repository (GitHub, GitLab, or Bitbucket)
+  </Step>
+
+  <Step title="Configure Build Settings">
+    - **Build command:** `npm run build`
+    - **Output directory:** `build`
+    - **Node version:** 16.x or higher
+  </Step>
+
+  <Step title="Set Up Branch Deployments">
+    - Production: Deploy from `main` branch
+    - Preview: Deploy from pull requests
+    - Development: Deploy from `develop` branch (optional)
+  </Step>
+
+  <Step title="Enable Deploy Hooks">
+    Configure webhooks for automatic deployments:
+    - On git push
+    - On pull request
+    - On tag creation
+  </Step>
+</Steps>
+
+## Monitoring and Analytics
+
+After deployment, monitor your application:
+
+- **Vercel Analytics** - Built-in performance monitoring
+- **Google Analytics** - User behavior tracking
+- **Sentry** - Error tracking and monitoring
+- **Web Vitals** - Core web vitals reporting
+
+<Note>
+  The application includes web-vitals package for performance monitoring. Check `src/reportWebVitals.js` for configuration.
+</Note>
+
+## Next Steps
+
+- Review [Building Guide](/guides/building) for build optimization tips
+- Set up monitoring and analytics
+- Configure custom domain
+- Enable HTTPS/SSL certificate
+- Set up staging environment

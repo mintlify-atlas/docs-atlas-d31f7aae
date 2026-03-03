@@ -1,0 +1,480 @@
+---
+title: 'Edge Config Integration'
+description: 'Configure your application remotely using Vercel Edge Config without redeploying'
+---
+
+## Overview
+
+Edge Config provides a way to update configuration values at runtime without redeploying your application. This is powered by Vercel's Edge Config infrastructure and allows you to control service hours, store status, and emergency messages instantly.
+
+<Info>
+  Edge Config values are fetched at the edge, providing ultra-low latency access to configuration worldwide.
+</Info>
+
+## Configuration File
+
+Edge Config integration is implemented in `src/config/edgeConfig.js:1-94`.
+
+## Edge Config Keys
+
+Three main configuration keys are supported:
+
+<ParamField path="service_hours" type="object">
+  Controls service operating hours and availability
+  
+  See [Service Hours Configuration](/configuration/service-hours) for details.
+</ParamField>
+
+<ParamField path="store_status" type="object">
+  Manual store status controls (open/closed, maintenance mode)
+</ParamField>
+
+<ParamField path="emergency_message" type="object">
+  Display emergency or important messages to customers
+</ParamField>
+
+## Configuration Structure
+
+### Service Hours
+
+```json
+{
+  "service_hours": {
+    "enabled": true,
+    "startHour": 8,
+    "startMinute": 30,
+    "endHour": 22,
+    "endMinute": 50,
+    "weekdaysEnabled": true,
+    "weekendsEnabled": true,
+    "closedDates": ["2024-01-01", "2024-12-25"],
+    "timezone": "Europe/Istanbul"
+  }
+}
+```
+
+<ParamField path="service_hours.enabled" type="boolean" default="true">
+  Master switch for service hours
+</ParamField>
+
+<ParamField path="service_hours.startHour" type="number" default="8">
+  Service start hour (24-hour format)
+</ParamField>
+
+<ParamField path="service_hours.startMinute" type="number" default="30">
+  Service start minute
+</ParamField>
+
+<ParamField path="service_hours.endHour" type="number" default="22">
+  Service end hour (24-hour format)
+</ParamField>
+
+<ParamField path="service_hours.endMinute" type="number" default="50">
+  Service end minute
+</ParamField>
+
+<ParamField path="service_hours.weekdaysEnabled" type="boolean" default="true">
+  Enable service on weekdays
+</ParamField>
+
+<ParamField path="service_hours.weekendsEnabled" type="boolean" default="true">
+  Enable service on weekends
+</ParamField>
+
+<ParamField path="service_hours.closedDates" type="array" default="[]">
+  Array of dates when service is closed (YYYY-MM-DD format)
+</ParamField>
+
+<ParamField path="service_hours.timezone" type="string" default="Europe/Istanbul">
+  Timezone for time calculations
+</ParamField>
+
+### Store Status
+
+```json
+{
+  "store_status": {
+    "isOpen": true,
+    "temporarilyClosed": false,
+    "maintenanceMode": false,
+    "reason": ""
+  }
+}
+```
+
+<ParamField path="store_status.isOpen" type="boolean" default="true">
+  Master on/off switch for the entire store
+  
+  Set to `false` to close the store completely.
+</ParamField>
+
+<ParamField path="store_status.temporarilyClosed" type="boolean" default="false">
+  Temporary closure flag (e.g., for emergencies, staff shortage)
+</ParamField>
+
+<ParamField path="store_status.maintenanceMode" type="boolean" default="false">
+  Maintenance mode flag (shows maintenance message to customers)
+</ParamField>
+
+<ParamField path="store_status.reason" type="string" default="">
+  Reason for closure (displayed to customers)
+  
+  Example: "Teknik bakım nedeniyle geçici olarak kapalıyız"
+</ParamField>
+
+### Emergency Message
+
+```json
+{
+  "emergency_message": {
+    "enabled": false,
+    "message": "",
+    "priority": "normal"
+  }
+}
+```
+
+<ParamField path="emergency_message.enabled" type="boolean" default="false">
+  Whether to display the emergency message
+</ParamField>
+
+<ParamField path="emergency_message.message" type="string" default="">
+  The message text to display
+  
+  Example: "Yoğun talep nedeniyle teslimat süreleri uzamıştır"
+</ParamField>
+
+<ParamField path="emergency_message.priority" type="string" default="normal">
+  Message priority level: `normal`, `warning`, or `urgent`
+  
+  Affects styling and prominence of the message display.
+</ParamField>
+
+## Setup Guide
+
+<Steps>
+  <Step title="Create Edge Config Store">
+    In your Vercel dashboard, go to Storage and create a new Edge Config store.
+    
+    ```bash
+    vercel env add EDGE_CONFIG
+    ```
+  </Step>
+  
+  <Step title="Get Connection String">
+    Copy the Edge Config connection string from Vercel dashboard.
+    
+    It looks like: `https://edge-config.vercel.com/[your-id]?token=[your-token]`
+  </Step>
+  
+  <Step title="Add Environment Variable">
+    Add `EDGE_CONFIG` environment variable to your project:
+    
+    ```bash .env.local
+    EDGE_CONFIG=https://edge-config.vercel.com/ecfg_xxx?token=xxx
+    ```
+  </Step>
+  
+  <Step title="Install Vercel Edge Config SDK">
+    Install the required package:
+    
+    ```bash
+    npm install @vercel/edge-config
+    ```
+  </Step>
+  
+  <Step title="Configure Initial Values">
+    In Vercel dashboard, add your configuration keys with initial values using the JSON structure shown above.
+  </Step>
+</Steps>
+
+## Usage Examples
+
+### Fetch All Settings
+
+```javascript src/config/edgeConfig.js
+import { getEdgeConfigServiceSettings } from '@/config/edgeConfig';
+
+const settings = await getEdgeConfigServiceSettings();
+
+console.log(settings);
+// {
+//   serviceHours: { startHour: 8, endHour: 22, ... },
+//   storeStatus: { isOpen: true, ... },
+//   emergencyMessage: { enabled: false, ... }
+// }
+```
+
+### Get Single Value
+
+```javascript src/config/edgeConfig.js
+import { getEdgeConfigValue } from '@/config/edgeConfig';
+
+const storeStatus = await getEdgeConfigValue('store_status');
+
+if (storeStatus.maintenanceMode) {
+  console.log('Store is in maintenance mode');
+}
+```
+
+### Merge with Local Settings
+
+```javascript src/config/edgeConfig.js
+import { mergeWithEdgeConfig, DEFAULT_EDGE_CONFIG_STRUCTURE } from '@/config/edgeConfig';
+
+const localSettings = {
+  serviceHours: { startHour: 8, endHour: 20 },
+  storeStatus: { isOpen: true }
+};
+
+const edgeSettings = await getEdgeConfigServiceSettings();
+const merged = mergeWithEdgeConfig(localSettings, edgeSettings);
+
+// Edge Config values override local settings
+console.log(merged.serviceHours.endHour); // Uses Edge Config value
+```
+
+### Integration with Service Hours
+
+The service hours system automatically loads Edge Config (see `src/config/serviceHours.js:39-65`):
+
+```javascript src/config/serviceHours.js
+import { loadEdgeConfigSettings, isServiceOpen } from '@/config/serviceHours';
+
+// Manually load Edge Config settings
+await loadEdgeConfigSettings();
+
+// Or let isServiceOpen() load them automatically
+const open = await isServiceOpen();
+// Edge Config settings are loaded and merged with defaults
+```
+
+## API Reference
+
+### getEdgeConfigServiceSettings()
+
+Fetches all service-related settings from Edge Config.
+
+```typescript
+function getEdgeConfigServiceSettings(): Promise<{
+  serviceHours: object | null,
+  storeStatus: object | null,
+  emergencyMessage: object | null
+} | null>
+```
+
+**Returns:** Object with all settings, or `null` if Edge Config is unavailable
+
+**Implementation (see `src/config/edgeConfig.js:11-29`):**
+- Fetches all three keys in parallel using `Promise.all()`
+- Returns `null` and logs warning if fetch fails
+- Non-blocking: Application continues with default values if Edge Config fails
+
+### getEdgeConfigValue()
+
+Fetches a single value from Edge Config.
+
+```typescript
+function getEdgeConfigValue(key: string): Promise<any | null>
+```
+
+**Parameters:**
+- `key` - The Edge Config key to fetch
+
+**Returns:** The value, or `null` if unavailable
+
+### mergeWithEdgeConfig()
+
+Merges local settings with Edge Config values (Edge Config takes priority).
+
+```typescript
+function mergeWithEdgeConfig(
+  localSettings: object,
+  edgeSettings: object | null
+): object
+```
+
+**Parameters:**
+- `localSettings` - Default/fallback settings from code
+- `edgeSettings` - Settings from Edge Config (or null)
+
+**Returns:** Merged configuration object
+
+**Logic (see `src/config/edgeConfig.js:68-94`):**
+- If `edgeSettings` is null, returns `localSettings` unchanged
+- Otherwise, spreads local settings and overwrites with Edge Config values
+- Handles nested objects (serviceHours, storeStatus, emergencyMessage)
+
+## Default Configuration Structure
+
+Reference structure for Edge Config values (see `src/config/edgeConfig.js:42-65`):
+
+```javascript src/config/edgeConfig.js
+export const DEFAULT_EDGE_CONFIG_STRUCTURE = {
+  service_hours: {
+    enabled: true,
+    startHour: 8,
+    startMinute: 30,
+    endHour: 22,
+    endMinute: 50,
+    weekdaysEnabled: true,
+    weekendsEnabled: true,
+    closedDates: [],
+    timezone: "Europe/Istanbul"
+  },
+  store_status: {
+    isOpen: true,
+    temporarilyClosed: false,
+    maintenanceMode: false,
+    reason: ""
+  },
+  emergency_message: {
+    enabled: false,
+    message: "",
+    priority: "normal"
+  }
+};
+```
+
+## Common Use Cases
+
+### Emergency Store Closure
+
+Quickly close your store without redeploying:
+
+```json
+{
+  "store_status": {
+    "isOpen": false,
+    "temporarilyClosed": true,
+    "maintenanceMode": false,
+    "reason": "Acil durum nedeniyle bugün kapalıyız. Yarın normal saatlerde açık olacağız."
+  }
+}
+```
+
+### Extend Hours for Special Event
+
+```json
+{
+  "service_hours": {
+    "enabled": true,
+    "startHour": 8,
+    "startMinute": 0,
+    "endHour": 23,
+    "endMinute": 59,
+    "weekdaysEnabled": true,
+    "weekendsEnabled": true,
+    "closedDates": []
+  }
+}
+```
+
+### Show Important Message
+
+```json
+{
+  "emergency_message": {
+    "enabled": true,
+    "message": "Ramazan Bayramı nedeniyle 10-13 Nisan arası teslimat yapılmayacaktır.",
+    "priority": "warning"
+  }
+}
+```
+
+### Maintenance Mode
+
+```json
+{
+  "store_status": {
+    "isOpen": false,
+    "temporarilyClosed": false,
+    "maintenanceMode": true,
+    "reason": "Sistem güncellemesi yapılıyor. 1 saat içinde tekrar açılacağız."
+  }
+}
+```
+
+## Error Handling
+
+The system is designed to be resilient:
+
+```javascript src/config/edgeConfig.js
+export const getEdgeConfigServiceSettings = async () => {
+  try {
+    const [serviceHours, storeStatus, emergencyMessage] = await Promise.all([...]);
+    return { serviceHours, storeStatus, emergencyMessage };
+  } catch (error) {
+    console.warn('Edge Config yüklenemedi, varsayılan ayarlar kullanılıyor:', error);
+    return null; // Application continues with defaults
+  }
+};
+```
+
+<Info>
+  If Edge Config is unavailable, your application automatically falls back to the default configuration defined in code. This ensures your app continues working even during Edge Config outages.
+</Info>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Version Control" icon="code-branch">
+    Keep `DEFAULT_EDGE_CONFIG_STRUCTURE` in your code as documentation and fallback.
+  </Card>
+  
+  <Card title="Test Changes" icon="flask">
+    Test Edge Config changes in staging environment before applying to production.
+  </Card>
+  
+  <Card title="Monitoring" icon="chart-line">
+    Monitor console warnings for Edge Config fetch failures.
+  </Card>
+  
+  <Card title="Cache Strategy" icon="database">
+    Edge Config values are cached at the edge. Updates propagate within seconds globally.
+  </Card>
+</CardGroup>
+
+## Security Considerations
+
+<Warning>
+  Never store sensitive data (API keys, passwords) in Edge Config. It's designed for configuration values, not secrets.
+</Warning>
+
+- Edge Config is read-only from your application
+- Only Vercel team members with appropriate permissions can modify values
+- Connection string should be kept in environment variables, not committed to code
+- Use Vercel's environment variable management for different environments
+
+## Updating Configuration
+
+You can update Edge Config values through:
+
+1. **Vercel Dashboard:** Web UI for manual updates
+2. **Vercel CLI:** Command-line updates
+3. **Vercel API:** Programmatic updates
+
+### Using Vercel CLI
+
+```bash
+# List all items
+vercel env ls
+
+# Update a value
+vercel edge-config item set store_status '{"isOpen": false, "reason": "Closed today"}'
+```
+
+## Performance
+
+<Card title="Ultra-Low Latency" icon="gauge-high">
+  Edge Config is served from Vercel's edge network worldwide:
+  - **Global read latency:** < 10ms (P95)
+  - **Update propagation:** < 10 seconds globally
+  - **Availability:** 99.99% SLA
+</Card>
+
+## Related Configuration
+
+- [Service Hours](/configuration/service-hours) - Controlled via Edge Config
+- [Order Limits](/configuration/order-limits) - Could be extended to use Edge Config
+- [Damacana Limits](/configuration/damacana-limits) - Could be extended to use Edge Config

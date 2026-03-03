@@ -1,0 +1,411 @@
+---
+title: 'Cart Context API'
+description: 'API reference for shopping cart state management'
+---
+
+## Overview
+
+The Cart Context provides a React Context-based shopping cart with methods for managing items, calculating totals, and generating order messages.
+
+**Source:** `src/context/CartContext.js`
+
+---
+
+## Hook
+
+### useCart()
+
+Custom hook to access cart state and methods.
+
+```javascript
+import { useCart } from '@/context/CartContext';
+
+const ProductCard = ({ product }) => {
+  const { addItem, getItemQuantity } = useCart();
+  const quantity = getItemQuantity(product.id);
+  
+  return (
+    <div>
+      <h3>{product.name}</h3>
+      <p>In cart: {quantity}</p>
+      <button onClick={() => addItem(product)}>
+        Add to Cart
+      </button>
+    </div>
+  );
+};
+```
+
+<ParamField path="returns" type="object">
+  Cart context object with state and methods
+</ParamField>
+
+<ResponseField name="Error Handling">
+  Throws an error if used outside of `<CartProvider>`. Always wrap your app with `CartProvider`:
+  
+  ```javascript
+  import { CartProvider } from '@/context/CartContext';
+  
+  function App() {
+    return (
+      <CartProvider>
+        <YourComponents />
+      </CartProvider>
+    );
+  }
+  ```
+</ResponseField>
+
+---
+
+## State
+
+### items
+
+Array of cart items.
+
+```javascript
+const { items } = useCart();
+
+items.forEach(item => {
+  console.log(`${item.name}: ${item.quantity}x @ ${item.price}`);
+});
+```
+
+<ParamField path="type" type="array">
+  Array of cart item objects
+</ParamField>
+
+<Expandable title="Cart Item Structure">
+  <ResponseField name="id" type="number | string">
+    Unique product identifier
+  </ResponseField>
+  
+  <ResponseField name="name" type="string">
+    Product name
+  </ResponseField>
+  
+  <ResponseField name="price" type="string">
+    Product price (formatted string, e.g., "25 TL", "12.50 TL")
+  </ResponseField>
+  
+  <ResponseField name="quantity" type="number">
+    Number of items in cart
+  </ResponseField>
+  
+  <ResponseField name="...rest" type="any">
+    Any other properties from the product object are preserved
+  </ResponseField>
+</Expandable>
+
+---
+
+## Methods
+
+### addItem()
+
+Adds an item to the cart or increments quantity if already exists.
+
+```javascript
+const { addItem } = useCart();
+
+const product = {
+  id: 11,
+  name: "19L Damacana",
+  price: "25 TL",
+  image: "/images/damacana.jpg"
+};
+
+addItem(product);
+```
+
+<ParamField path="item" type="object" required>
+  Product object to add. Must have at minimum `id`, `name`, and `price` properties
+</ParamField>
+
+<ResponseField name="Behavior">
+  - If item doesn't exist in cart: adds it with `quantity: 1`
+  - If item already exists: increments `quantity` by 1
+  - Item matching is based on `id` property
+  - Preserves all product properties in cart
+</ResponseField>
+
+---
+
+### removeItem()
+
+Removes an item from the cart or decrements quantity.
+
+```javascript
+const { removeItem } = useCart();
+
+const product = { id: 11 };
+removeItem(product);
+```
+
+<ParamField path="item" type="object" required>
+  Product object to remove. Only `id` property is required
+</ParamField>
+
+<ResponseField name="Behavior">
+  - If item quantity > 1: decrements `quantity` by 1
+  - If item quantity = 1: removes item from cart completely
+  - If item not in cart: no effect
+  - Item matching is based on `id` property
+</ResponseField>
+
+---
+
+### clearCart()
+
+Removes all items from the cart.
+
+```javascript
+const { clearCart } = useCart();
+
+const handleClearCart = () => {
+  if (confirm('Clear entire cart?')) {
+    clearCart();
+  }
+};
+```
+
+<ResponseField name="Behavior">
+  Resets cart to empty state (`items: []`)
+</ResponseField>
+
+---
+
+### getItemQuantity()
+
+Gets the quantity of a specific item in the cart.
+
+```javascript
+const { getItemQuantity } = useCart();
+
+const quantity = getItemQuantity(11);
+console.log(`You have ${quantity} damacanas in cart`);
+```
+
+<ParamField path="itemId" type="number | string" required>
+  Product ID to check
+</ParamField>
+
+<ParamField path="returns" type="number">
+  Quantity of item in cart, or `0` if not in cart
+</ParamField>
+
+---
+
+### getTotalItems()
+
+Calculates total number of items in the cart.
+
+```javascript
+const { getTotalItems } = useCart();
+
+const totalItems = getTotalItems();
+// Cart: [{ quantity: 2 }, { quantity: 3 }]
+// Returns: 5
+```
+
+<ParamField path="returns" type="number">
+  Sum of all item quantities in cart
+</ParamField>
+
+<ResponseField name="Calculation">
+  Sums the `quantity` property of all cart items:
+  ```javascript
+  items.reduce((total, item) => total + item.quantity, 0)
+  ```
+</ResponseField>
+
+---
+
+### getTotalPrice()
+
+Calculates total price of all items in the cart.
+
+```javascript
+const { getTotalPrice } = useCart();
+
+const total = getTotalPrice();
+console.log(`Total: ${total.toFixed(2)} TL`);
+```
+
+<ParamField path="returns" type="number">
+  Total price as a numeric value (not formatted)
+</ParamField>
+
+<ResponseField name="Price Parsing">
+  Parses price strings to numbers:
+  - Removes non-numeric characters (except decimal separators)
+  - Converts commas to periods for decimal parsing
+  - Examples:
+    - `"25 TL"` → `25`
+    - `"12.50 TL"` → `12.50`
+    - `"1,250.99 TL"` → `1250.99`
+  
+  Calculation: `price * quantity` for each item, then summed
+</ResponseField>
+
+---
+
+### getCartMessage()
+
+Generates a formatted message for WhatsApp or other messaging platforms.
+
+```javascript
+const { getCartMessage } = useCart();
+
+const message = getCartMessage();
+console.log(message);
+// Output:
+// "2 adet - 19L Damacana
+// 1 adet - 6x1.5L Su Paketi
+// sipariş etmek istiyorum."
+```
+
+<ParamField path="returns" type="string">
+  Formatted cart message, or empty string if cart is empty
+</ParamField>
+
+<ResponseField name="Message Format">
+  ```
+  {quantity} adet - {name}
+  {quantity} adet - {name}
+  ...
+  sipariş etmek istiyorum.
+  ```
+  
+  - Each item on a new line
+  - Format: `{quantity} adet - {name}`
+  - Ends with: `"sipariş etmek istiyorum."`
+  - Returns `""` if cart is empty
+</ResponseField>
+
+---
+
+## Usage Examples
+
+### Basic Cart Display
+
+```javascript
+import { useCart } from '@/context/CartContext';
+
+const CartSummary = () => {
+  const { items, getTotalItems, getTotalPrice } = useCart();
+  
+  return (
+    <div>
+      <h2>Your Cart ({getTotalItems()} items)</h2>
+      {items.map(item => (
+        <div key={item.id}>
+          {item.name} - {item.quantity}x - {item.price}
+        </div>
+      ))}
+      <p>Total: {getTotalPrice().toFixed(2)} TL</p>
+    </div>
+  );
+};
+```
+
+### Product Counter
+
+```javascript
+import { useCart } from '@/context/CartContext';
+
+const ProductCounter = ({ product }) => {
+  const { addItem, removeItem, getItemQuantity } = useCart();
+  const quantity = getItemQuantity(product.id);
+  
+  return (
+    <div className="counter">
+      <button onClick={() => removeItem(product)}>-</button>
+      <span>{quantity}</span>
+      <button onClick={() => addItem(product)}>+</button>
+    </div>
+  );
+};
+```
+
+### WhatsApp Order Integration
+
+```javascript
+import { useCart } from '@/context/CartContext';
+import { openWhatsApp } from '@/config/whatsapp';
+
+const CheckoutButton = () => {
+  const { getCartMessage, getTotalItems } = useCart();
+  
+  const handleCheckout = () => {
+    if (getTotalItems() === 0) {
+      alert('Your cart is empty');
+      return;
+    }
+    
+    const message = getCartMessage();
+    openWhatsApp('Sipariş', message);
+  };
+  
+  return (
+    <button onClick={handleCheckout}>
+      Complete Order ({getTotalItems()})
+    </button>
+  );
+};
+```
+
+### Cart Badge
+
+```javascript
+import { useCart } from '@/context/CartContext';
+
+const CartBadge = () => {
+  const { getTotalItems } = useCart();
+  const itemCount = getTotalItems();
+  
+  if (itemCount === 0) return null;
+  
+  return (
+    <span className="badge">
+      {itemCount}
+    </span>
+  );
+};
+```
+
+### Order Validation
+
+```javascript
+import { useCart } from '@/context/CartContext';
+import { validateOrderAmount } from '@/config/orderLimits';
+
+const OrderValidation = () => {
+  const { getTotalPrice } = useCart();
+  const totalPrice = getTotalPrice();
+  const validation = validateOrderAmount(totalPrice);
+  
+  if (!validation.isValid) {
+    return <Alert>{validation.message}</Alert>;
+  }
+  
+  return <CheckoutButton />;
+};
+```
+
+---
+
+## State Persistence
+
+<Warning>
+  The current implementation does not persist cart state to localStorage. Cart will be cleared on page refresh.
+  
+  To add persistence, wrap state updates with localStorage calls:
+  
+  ```javascript
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(state.items));
+  }, [state.items]);
+  ```
+</Warning>

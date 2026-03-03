@@ -1,0 +1,446 @@
+---
+title: 'Adding Videos'
+description: 'Learn how to add and manage promotional videos in your application'
+icon: 'video'
+---
+
+## Overview
+
+The Bİ DOLU İÇECEK application supports promotional videos that open in a modal when users click the video icon (🎥) in the header. This guide shows you how to add, configure, and manage videos.
+
+## Video Directory Structure
+
+Videos are stored in the `public/videos/` directory:
+
+```
+public/
+├── videos/
+│   ├── tanitim-video.mp4      ← Main promotional video
+│   ├── tanitim-video.webm     ← Alternative format (optional)
+│   └── ...
+└── images/
+    ├── video-poster.jpg        ← Video thumbnail (optional)
+    └── video-icon.png          ← Custom video icon (optional)
+```
+
+## Supported Video Formats
+
+<Note>
+The application supports multiple video formats for maximum browser compatibility.
+</Note>
+
+| Format | Extension | Browser Support | Recommended |
+|--------|-----------|-----------------|-------------|
+| **MP4** | `.mp4` | All modern browsers | ✓ Yes |
+| **WebM** | `.webm` | Chrome, Firefox, Edge | Optional |
+| **OGV** | `.ogv` | Older browsers | Optional |
+
+### Format Recommendations
+
+**Primary Format**: MP4 (H.264 codec)
+- Best compatibility
+- Good compression
+- Supported everywhere
+
+**Alternative Format**: WebM (VP9 codec)
+- Better compression than MP4
+- Smaller file sizes
+- Good for modern browsers
+
+## Adding a Promotional Video
+
+<Steps>
+  <Step title="Create videos directory">
+    If it doesn't exist, create the directory:
+
+    ```bash
+    mkdir -p public/videos
+    ```
+  </Step>
+
+  <Step title="Add video file">
+    Place your video in `public/videos/`:
+
+    ```bash
+    cp ~/Downloads/promo.mp4 public/videos/tanitim-video.mp4
+    ```
+
+    **Video specifications:**
+    - Maximum size: 50MB (recommended)
+    - Resolution: 1920x1080 (Full HD)
+    - Aspect ratio: 16:9
+    - Duration: 30-120 seconds recommended
+  </Step>
+
+  <Step title="Update socialMedia.js configuration">
+    Open `src/data/socialMedia.js` and update the video URL:
+
+    ```javascript src/data/socialMedia.js
+    export const SOCIAL_MEDIA_LINKS = [
+      {
+        id: 1,
+        name: "Tanıtım Videosu",
+        type: "video",
+        videoUrl: "/videos/tanitim-video.mp4",  // Your video path
+        icon: null,
+        iconPlaceholder: "🎥",
+        target: "modal"
+      },
+      // ... other social media links
+    ];
+    ```
+  </Step>
+
+  <Step title="Test the video">
+    Start your development server and click the 🎥 icon in the header:
+
+    ```bash
+    npm start
+    ```
+
+    The video should open in a modal and start playing automatically.
+  </Step>
+</Steps>
+
+## Video Modal Configuration
+
+The video modal is managed by `src/components/VideoModal.js` and provides:
+
+- **Auto-play**: Video starts automatically when modal opens
+- **Controls**: Play/pause, volume, fullscreen
+- **Responsive**: Works on mobile and desktop
+- **Keyboard support**: ESC key to close
+
+### VideoModal Component
+
+From `src/components/VideoModal.js`:
+
+```javascript src/components/VideoModal.js
+const VideoModal = ({ isOpen, onClose, videoUrl, videoTitle = "Video" }) => {
+  // ...
+  return (
+    <div className="video-modal-overlay">
+      <div className="video-modal-content">
+        <div className="video-modal-header">
+          <h3>{videoTitle}</h3>
+          <button onClick={onClose}>×</button>
+        </div>
+        <div className="video-modal-body">
+          <video
+            controls
+            autoPlay
+            poster="/images/video-poster.jpg"
+          >
+            <source src={videoUrl} type="video/mp4" />
+            <source src={videoUrl.replace('.mp4', '.webm')} type="video/webm" />
+          </video>
+        </div>
+      </div>
+    </div>
+  );
+};
+```
+
+### Video Attributes
+
+| Attribute | Description | Value |
+|-----------|-------------|-------|
+| `controls` | Show playback controls | Always enabled |
+| `autoPlay` | Start automatically | Enabled |
+| `poster` | Thumbnail before play | `/images/video-poster.jpg` |
+
+## Adding Multiple Video Formats
+
+For better browser compatibility, provide multiple formats:
+
+<Steps>
+  <Step title="Prepare video in multiple formats">
+    Convert your video to MP4 and WebM:
+
+    ```bash
+    # Using FFmpeg
+    ffmpeg -i input.mov -c:v libx264 -preset slow -crf 22 tanitim-video.mp4
+    ffmpeg -i input.mov -c:v libvpx-vp9 -crf 30 tanitim-video.webm
+    ```
+  </Step>
+
+  <Step title="Add both files to public/videos/">
+    ```bash
+    public/videos/
+    ├── tanitim-video.mp4
+    └── tanitim-video.webm
+    ```
+  </Step>
+
+  <Step title="Configure primary format">
+    The VideoModal component automatically tries WebM as fallback:
+
+    ```javascript src/data/socialMedia.js
+    videoUrl: "/videos/tanitim-video.mp4"
+    ```
+
+    The component will automatically look for `tanitim-video.webm`.
+  </Step>
+</Steps>
+
+## Video Poster Image
+
+A poster image is the thumbnail shown before the video plays.
+
+### Adding a Poster
+
+<Steps>
+  <Step title="Create poster image">
+    Extract a frame from your video or create a custom thumbnail:
+
+    ```bash
+    # Extract frame at 5 seconds using FFmpeg
+    ffmpeg -i tanitim-video.mp4 -ss 00:00:05 -vframes 1 video-poster.jpg
+    ```
+
+    **Poster specifications:**
+    - Format: JPG or PNG
+    - Dimensions: 1920x1080 (match video resolution)
+    - Size: < 200KB
+  </Step>
+
+  <Step title="Place in public/images/">
+    ```bash
+    cp video-poster.jpg public/images/
+    ```
+  </Step>
+
+  <Step title="Verify in VideoModal.js">
+    The poster is already configured (line 46):
+
+    ```javascript src/components/VideoModal.js
+    <video
+      poster="/images/video-poster.jpg"
+      // ...
+    >
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+If `video-poster.jpg` doesn't exist, the browser will show a black screen until video loads.
+</Tip>
+
+## Social Media Configuration
+
+Videos are managed in `src/data/socialMedia.js` alongside social media links.
+
+### Full Configuration Example
+
+```javascript src/data/socialMedia.js
+export const SOCIAL_MEDIA_LINKS = [
+  {
+    id: 1,
+    name: "Tanıtım Videosu",
+    type: "video",                          // Type: video
+    videoUrl: "/videos/tanitim-video.mp4",  // Video path
+    icon: null,                              // Custom icon (optional)
+    iconPlaceholder: "🎥",                   // Emoji icon
+    target: "modal"                          // Opens in modal
+  },
+  {
+    id: 2,
+    name: "Instagram",
+    type: "link",                            // Type: link
+    url: "https://instagram.com/yourpage",
+    icon: null,
+    iconPlaceholder: "📷",
+    target: "_blank"                         // Opens in new tab
+  },
+  {
+    id: 3,
+    name: "Dil Değiştir",
+    type: "language",                        // Type: language toggle
+    url: null,
+    icon: null,
+    iconPlaceholder: "🇹🇷",
+    target: "toggle"
+  }
+];
+```
+
+### Configuration Fields
+
+| Field | Type | Description | Example |
+|-------|------|-------------|----------|
+| `id` | Number | Unique identifier | `1` |
+| `name` | String | Display name | `"Tanıtım Videosu"` |
+| `type` | String | Item type | `"video"` or `"link"` or `"language"` |
+| `videoUrl` | String | Video file path | `"/videos/tanitim-video.mp4"` |
+| `icon` | String | Custom icon path | `"/images/video-icon.png"` or `null` |
+| `iconPlaceholder` | String | Emoji fallback | `"🎥"` |
+| `target` | String | Open behavior | `"modal"` |
+
+## Handling Click Events
+
+The `handleSocialMediaClick` function manages video modal opening:
+
+```javascript src/data/socialMedia.js
+export const handleSocialMediaClick = (
+  socialMedia, 
+  onVideoOpen = null, 
+  onLanguageToggle = null
+) => {
+  if (socialMedia.type === "video") {
+    if (onVideoOpen && socialMedia.videoUrl) {
+      onVideoOpen(socialMedia.videoUrl, socialMedia.name);
+    } else {
+      // No video configured
+      alert("Tanıtım videosu yakında eklenecek!");
+    }
+  } else if (socialMedia.type === "link") {
+    window.open(socialMedia.url, socialMedia.target, 'noopener,noreferrer');
+  } else if (socialMedia.type === "language") {
+    if (onLanguageToggle) onLanguageToggle();
+  }
+};
+```
+
+## Video Not Available Placeholder
+
+If no video is configured, the modal shows a placeholder:
+
+<Note>
+This appears when `videoUrl` is `null` or the file doesn't exist.
+</Note>
+
+```javascript src/components/VideoModal.js
+<div className="video-modal-placeholder">
+  <div className="video-placeholder-content">
+    <span className="video-placeholder-icon">🎥</span>
+    <h4>Video Yakında Eklenecek</h4>
+    <p>Tanıtım videomuz hazırlanıyor...</p>
+  </div>
+</div>
+```
+
+Styled in `src/App.css` (lines 1069-1099):
+
+```css src/App.css
+.video-modal-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+}
+```
+
+## Video Optimization
+
+### Compress Videos
+
+<Warning>
+Large video files slow down your site. Keep videos under 50MB.
+</Warning>
+
+**Using FFmpeg to compress:**
+
+```bash
+# High quality (larger file)
+ffmpeg -i input.mov -c:v libx264 -preset slow -crf 18 output.mp4
+
+# Balanced quality (recommended)
+ffmpeg -i input.mov -c:v libx264 -preset medium -crf 22 output.mp4
+
+# Smaller file (lower quality)
+ffmpeg -i input.mov -c:v libx264 -preset fast -crf 28 output.mp4
+```
+
+### Recommended Settings
+
+| Setting | Value | Reason |
+|---------|-------|--------|
+| Resolution | 1920x1080 | Full HD, good quality |
+| Frame rate | 30 fps | Smooth playback |
+| Bitrate | 2-5 Mbps | Balance size/quality |
+| Codec | H.264 | Universal support |
+
+## Troubleshooting
+
+### Video Doesn't Play
+
+**Problem**: Video path is incorrect
+
+**Solution**:
+```javascript
+// ✗ Wrong
+videoUrl: "videos/promo.mp4"           // Missing /
+videoUrl: "public/videos/promo.mp4"    // Don't include public/
+
+// ✓ Correct
+videoUrl: "/videos/tanitim-video.mp4"
+```
+
+### Video Shows Black Screen
+
+**Problem**: Video codec not supported or corrupted
+
+**Solution**: Re-encode with H.264 codec:
+```bash
+ffmpeg -i input.mov -c:v libx264 -c:a aac output.mp4
+```
+
+### Modal Doesn't Open
+
+**Problem**: `videoUrl` is `null` or missing
+
+**Solution**: Update `src/data/socialMedia.js`:
+```javascript
+videoUrl: "/videos/tanitim-video.mp4"  // Must not be null
+```
+
+### Auto-play Not Working on Mobile
+
+**Problem**: Mobile browsers restrict auto-play
+
+**Solution**: This is by design. Users must interact first. The `autoPlay` attribute works best on desktop.
+
+## Custom Video Icon (Optional)
+
+Replace the 🎥 emoji with a custom icon:
+
+<Steps>
+  <Step title="Create icon image">
+    - Format: PNG with transparency
+    - Size: 50x50px
+    - Name: `video-icon.png`
+  </Step>
+
+  <Step title="Place in public/images/">
+    ```bash
+    cp custom-icon.png public/images/video-icon.png
+    ```
+  </Step>
+
+  <Step title="Update socialMedia.js">
+    ```javascript src/data/socialMedia.js
+    {
+      id: 1,
+      name: "Tanıtım Videosu",
+      type: "video",
+      videoUrl: "/videos/tanitim-video.mp4",
+      icon: "/images/video-icon.png",  // Custom icon
+      iconPlaceholder: "🎥",
+      target: "modal"
+    }
+    ```
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Adding Images" icon="image" href="/guides/adding-images">
+    Learn about managing images and visual assets
+  </Card>
+  <Card title="Styling" icon="palette" href="/guides/styling">
+    Customize the video modal appearance
+  </Card>
+</CardGroup>

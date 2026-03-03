@@ -1,0 +1,197 @@
+---
+title: Introduction
+description: Welcome to Bİ DOLU İÇECEK - Modern water and beverage delivery platform built with React
+---
+
+# Welcome to Bİ DOLU İÇECEK
+
+Bİ DOLU İÇECEK is a modern, responsive water and beverage delivery e-commerce platform designed for seamless customer ordering experience. Built with React and optimized for both mobile and desktop users.
+
+<CardGroup cols={2}>
+  <Card
+    title="Product Catalog"
+    icon="bottle-water"
+    href="#product-catalog"
+  >
+    Browse premium water brands including Fuska, Pınar, Buzdağı, and more
+  </Card>
+  <Card
+    title="Shopping Cart"
+    icon="cart-shopping"
+    href="#shopping-cart"
+  >
+    Add products to cart with quantity adjustments and real-time total calculation
+  </Card>
+  <Card
+    title="WhatsApp Ordering"
+    icon="whatsapp"
+    href="#whatsapp-integration"
+  >
+    Direct ordering via WhatsApp with pre-filled messages
+  </Card>
+  <Card
+    title="Service Hours"
+    icon="clock"
+    href="#service-hours"
+  >
+    Automated service hours management with real-time order validation
+  </Card>
+</CardGroup>
+
+## What is Bİ DOLU İÇECEK?
+
+Bİ DOLU İÇECEK ("suapp") is a React-based SaaS platform that streamlines water and beverage delivery for customers. The application provides:
+
+- **Responsive Design**: Mobile-first approach with optimized layouts for all screen sizes
+- **Real-time Cart Management**: Add, remove, and adjust product quantities with instant price updates
+- **Smart Service Hours**: Automatic order validation based on configurable service hours (8:30 - 20:30)
+- **WhatsApp Integration**: Direct ordering through WhatsApp with customizable message templates
+- **Multi-brand Support**: 9+ water brands with 50+ product variants
+- **Order Limits**: Configurable minimum order amounts and product restrictions
+
+## Key Features
+
+### Product Catalog
+
+The platform offers a comprehensive catalog of water and beverage products:
+
+- **Fuska Su**: Damacana (19L), bottles (0.33L - 5L), cam damacana (15L)
+- **Pınar Su**: Premium options including glass bottles and sert pet variants
+- **Buzdağı Su**: Natural spring water in multiple sizes
+- **Sultan Su**: Single-use damacanas and various bottle sizes
+- **Uludağ İçecek**: Premium soda and beverages
+- **Erikli Su**: Wide range of bottle formats
+- **Munzur Su**: Premium spring water options
+- **Taşkesti Su**: Glass bottles and damacanas
+- **Bardak Su**: Convenient cup-sized portions (60x160mL - 60x200mL)
+
+### Shopping Cart System
+
+The cart system provides:
+
+```javascript
+// Cart Context manages state across the application
+import { CartProvider } from './context/CartContext';
+import OrderButton from './components/OrderButton';
+
+function App() {
+  return (
+    <CartProvider>
+      <div className="App">
+        {/* Product catalog */}
+        <main className="main-content">
+          <div className="products-grid">
+            {PRODUCTS.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </main>
+        
+        {/* Floating order button */}
+        <OrderButton />
+      </div>
+    </CartProvider>
+  );
+}
+```
+
+- Real-time total calculation
+- Quantity adjustments
+- Product modal with sub-product selection
+- Minimum order validation (40 TL minimum)
+- Damacana time restrictions (13:00 - 19:00)
+
+### WhatsApp Integration
+
+Seamless ordering via WhatsApp:
+
+```javascript
+// WhatsApp configuration from src/config/whatsapp.js
+export const WHATSAPP_CONFIG = {
+  phoneNumber: "905303099887",
+  defaultMessage: "Merhaba, {productName} sipariş etmek istiyorum."
+};
+```
+
+Features:
+- Pre-filled product messages
+- Custom message templates per product
+- Direct link to business WhatsApp
+- Cart summary included in message
+
+### Service Hours Management
+
+Automated service hours control:
+
+```javascript
+// Default service hours from src/config/serviceHours.js
+export const DEFAULT_SERVICE_HOURS = {
+  startHour: 8,
+  startMinute: 30,
+  endHour: 20,
+  endMinute: 30,
+  weekdaysEnabled: true,
+  weekendsEnabled: true,
+  closedDates: [],
+  testMode: false
+};
+```
+
+- Real-time service status checking
+- Automatic button disabling outside hours
+- Weekend/weekday configuration
+- Special closed dates support
+- Edge Config integration for remote updates
+
+## Technology Stack
+
+<Note>
+  The application is built with modern React practices and optimized for production deployment.
+</Note>
+
+- **React 19.1.1**: Latest React features and hooks
+- **React Scripts 5.0.1**: Development and build tooling
+- **Tailwind CSS 4.1.12**: Utility-first CSS framework
+- **PostCSS**: CSS processing and optimization
+- **Vercel Edge Config**: Remote configuration management
+
+## User Experience
+
+### First-time Visitors
+
+- Welcome message displayed on first visit (localStorage tracking)
+- Scroll indicators guide users through the catalog
+- Scroll progress bar at the top of the page
+
+### Mobile Optimization
+
+- Touch-friendly buttons and controls
+- Responsive product grid (1 column mobile, 3+ columns desktop)
+- Modal interfaces for product selection
+- Optimized image loading with emoji placeholders
+
+### Real-time Updates
+
+- Live service hours checking (updates every minute)
+- Cart total updates instantly
+- Order button state reflects current eligibility
+- Damacana availability based on time of day
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Installation"
+    icon="download"
+    href="/installation"
+  >
+    Set up the development environment and install dependencies
+  </Card>
+  <Card
+    title="Quick Start"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Run the application and explore key features
+  </Card>
+</CardGroup>

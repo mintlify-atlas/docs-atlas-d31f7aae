@@ -1,0 +1,158 @@
+---
+title: 'Components Overview'
+description: 'Comprehensive overview of all React components in the Bİ DOLU İÇECEK water delivery application'
+icon: 'puzzle-piece'
+---
+
+## Component Architecture
+
+The Bİ DOLU İÇECEK application is built with a modular React architecture, featuring reusable components that handle product display, cart management, order processing, and user interactions.
+
+### Core Components
+
+The application consists of several key component types:
+
+<CardGroup cols={2}>
+  <Card title="Product Card" icon="box" href="/components/product-card">
+    Interactive product cards that display products and trigger modals for detailed options
+  </Card>
+  
+  <Card title="Product Modal" icon="window-maximize" href="/components/product-modal">
+    Full-screen modal for viewing and adding sub-products to cart with quantity controls
+  </Card>
+  
+  <Card title="Order Button" icon="cart-shopping" href="/components/order-button">
+    Smart floating order button with service hours validation and WhatsApp integration
+  </Card>
+  
+  <Card title="Cart Context" icon="database" href="/components/cart-context">
+    Global state management for shopping cart with React Context API
+  </Card>
+</CardGroup>
+
+## Component Hierarchy
+
+```
+App (CartProvider)
+├── Header
+│   ├── SocialMediaIcon
+│   └── ScrollIndicator
+├── ProductCard (multiple)
+│   ├── ProductImage
+│   └── ProductModal
+│       └── SubProductCard
+│           ├── ProductImage
+│           └── Cart Controls
+├── OrderButton
+└── WelcomeMessage
+```
+
+## State Management
+
+The application uses React Context API for global state management:
+
+- **CartContext**: Manages shopping cart state, items, quantities, and cart operations
+- **Local State**: Components manage their own UI state (modals, loading states, etc.)
+
+<Tip>
+All cart-related functionality is centralized in `CartContext`, making it easy to access cart state from any component using the `useCart()` hook.
+</Tip>
+
+## Key Features
+
+### Product Display
+
+- **ProductCard**: Clickable cards with hover effects and accessibility support
+- **ProductImage**: Lazy-loaded images with fallback placeholders and loading indicators
+- **ProductModal**: Full-screen modal with sub-product grid and cart integration
+
+### Cart Management
+
+- **Add/Remove Items**: Quantity controls with increment/decrement buttons
+- **Real-time Updates**: Cart state updates instantly across all components
+- **Price Calculation**: Automatic total calculation with Turkish Lira formatting
+
+### Business Logic Integration
+
+- **Service Hours**: Components respect configured service hours (8:30-20:30)
+- **Damacana Limits**: Special restrictions for damacana products (cutoff at 19:00)
+- **Minimum Order**: 400 TL minimum order validation
+- **WhatsApp Integration**: Direct order placement via WhatsApp
+
+## Styling Approach
+
+### CSS Architecture
+
+The application uses a combination of:
+
+- **Custom CSS Classes**: Component-specific styles in `App.css`
+- **Tailwind Utilities**: Inline utility classes for layout and responsive design
+- **CSS Transitions**: Smooth animations for hover states and interactions
+
+### Responsive Design
+
+All components are fully responsive:
+
+```css
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+}
+```
+
+## Accessibility
+
+Components follow accessibility best practices:
+
+- **Keyboard Navigation**: All interactive elements support keyboard input (Enter, Space)
+- **ARIA Labels**: Descriptive labels for screen readers
+- **Focus States**: Clear visual focus indicators
+- **Semantic HTML**: Proper use of buttons, roles, and tabindex
+
+<Warning>
+When modifying components, ensure keyboard navigation and ARIA labels remain functional for accessibility compliance.
+</Warning>
+
+## Component Communication
+
+### Props Flow
+
+```javascript
+// Parent to Child
+<ProductCard product={product} />
+<ProductModal product={product} isOpen={isModalOpen} onClose={handleClose} />
+
+// Event Callbacks
+onClick={() => setIsModalOpen(true)}
+onClose={() => setIsModalOpen(false)}
+```
+
+### Context Usage
+
+```javascript
+// Accessing cart state from any component
+const { addItem, removeItem, getTotalItems, getTotalPrice } = useCart();
+```
+
+## Next Steps
+
+Explore individual component documentation for detailed props, methods, and usage examples:
+
+<CardGroup cols={2}>
+  <Card title="ProductCard Component" icon="box" href="/components/product-card">
+    Learn how to use and customize product cards
+  </Card>
+  
+  <Card title="ProductModal Component" icon="window-maximize" href="/components/product-modal">
+    Understand modal functionality and sub-product handling
+  </Card>
+  
+  <Card title="OrderButton Component" icon="cart-shopping" href="/components/order-button">
+    Integrate order validation and WhatsApp messaging
+  </Card>
+  
+  <Card title="CartContext & useCart" icon="database" href="/components/cart-context">
+    Master cart state management with Context API
+  </Card>
+</CardGroup>

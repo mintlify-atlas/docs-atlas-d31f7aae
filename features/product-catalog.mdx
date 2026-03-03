@@ -1,0 +1,292 @@
+---
+title: 'Product Catalog'
+description: 'Learn how the product catalog system works in Bİ DOLU İÇECEK'
+icon: 'box-open'
+---
+
+The product catalog is the core of the Bİ DOLU İÇECEK e-commerce platform, organizing water and beverage products in a hierarchical structure with main products and sub-products.
+
+## Product Structure
+
+Products are organized in a two-level hierarchy:
+
+1. **Main Products** - Category-level products (e.g., "Fuska Su", "Pınar Su")
+2. **Sub-Products** - Individual SKUs within each main product (e.g., "Fuska Su 19Lt Damacana")
+
+<Note>
+The product catalog is defined in `src/data/products.js` and exported as the `PRODUCTS` constant.
+</Note>
+
+## Product Data Structure
+
+### Main Product Schema
+
+```javascript src/data/products.js
+export const PRODUCTS = [
+  {
+    id: 1,
+    name: "Fuska Su",
+    price: "Seçenekleri Görün",
+    image: "/images/fuska.jpeg",
+    imagePlaceholder: "🍓",
+    whatsappMessage: "Merhaba Sultan Su sipariş etmek istiyorum. Adresim: ",
+    subProducts: [
+      // Sub-products array
+    ]
+  }
+];
+```
+
+### Sub-Product Schema
+
+Each main product contains an array of sub-products with detailed specifications:
+
+```javascript src/data/products.js
+{
+  id: 11,
+  name: "Fuska Su 19Lt Damacana",
+  price: "160 TL",
+  image: "/images/f19.png",
+  imagePlaceholder: "🏺",
+  whatsappMessage: "Merhaba Sultan Su 19L damacana sipariş etmek istiyorum. Adresim: "
+}
+```
+
+<Accordion title="Product Field Definitions">
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | number | Unique identifier for the product |
+| `name` | string | Display name of the product |
+| `price` | string | Price or "Seçenekleri Görün" for main products |
+| `image` | string | Path to product image |
+| `imagePlaceholder` | string | Emoji shown while image loads |
+| `whatsappMessage` | string | Pre-filled WhatsApp message template |
+| `subProducts` | array | Array of sub-product objects (main products only) |
+
+</Accordion>
+
+## Product Categories
+
+The platform currently supports 9 main product categories:
+
+<CodeGroup>
+
+```javascript Main Products
+1. Fuska Su (id: 1)
+2. Pınar Su (id: 2)
+3. Buzdağı Su (id: 3)
+4. Sultan Su (id: 4)
+5. Uludağ İçecek (id: 5)
+6. Erikli Su (id: 6)
+7. Munzur Su (id: 7)
+8. Taşkesti Su (id: 8)
+9. Bardak Su (id: 9)
+```
+
+```javascript Example Sub-Products
+// Fuska Su has 8 sub-products:
+- 19Lt Damacana (id: 11)
+- 15Lt Cam Damacana (id: 81)
+- 24x0.5L Şişe (id: 13)
+- 12x1Lt Şişe (id: 14)
+- 12x1.5Lt Şişe (id: 15)
+- 24x0.33Lt Şişe (id: 16)
+- 4x5Lt Şişe (id: 18)
+- 24x0.4Lt Sert Pet Şişe (id: 19)
+```
+
+</CodeGroup>
+
+## Image Management
+
+### Image Paths
+
+Product images are stored in the `/public/images/` directory and referenced using absolute paths:
+
+```javascript
+image: "/images/fuska.jpeg"
+```
+
+### Image Placeholders
+
+While images load, emoji placeholders provide visual feedback:
+
+```javascript
+imagePlaceholder: "🍓"  // Main product
+imagePlaceholder: "🏺"  // Damacana (jug)
+imagePlaceholder: "🍼"  // Bottle
+imagePlaceholder: "📦"  // Package
+```
+
+<Tip>
+Use descriptive emojis that represent the product type for better user experience during loading.
+</Tip>
+
+### Image Helper Function
+
+The catalog includes a helper function for normalizing image paths:
+
+```javascript src/data/products.js
+export const getProductImagePath = (imageName) => {
+  const normalizedName = imageName
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+  
+  return `/images/${normalizedName}.jpg`;
+};
+```
+
+## Product Modals
+
+When users click on a main product, a modal displays all sub-products. The modal is implemented in `ProductModal.js`:
+
+```javascript src/components/ProductModal.js
+const ProductModal = ({ product, isOpen, onClose }) => {
+  if (!isOpen || !product) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-backdrop"></div>
+      <div className="modal-content">
+        {/* Header with product info */}
+        <div className="modal-header">
+          <div className="modal-header-info">
+            <div className="modal-header-icon">
+              <span>{product.imagePlaceholder}</span>
+            </div>
+            <h2>{product.name}</h2>
+          </div>
+          <button onClick={onClose} className="modal-close-btn">
+            <span>‹</span>
+          </button>
+        </div>
+
+        {/* Sub Products Grid */}
+        <div className="modal-body">
+          <div className="modal-grid">
+            {product.subProducts?.map((subProduct) => (
+              <SubProductCard 
+                key={subProduct.id} 
+                subProduct={subProduct} 
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+```
+
+<Warning>
+The modal uses backdrop click detection to close. Make sure event propagation is properly handled in nested elements.
+</Warning>
+
+## Sub-Product Cards
+
+Each sub-product is rendered as a card with cart integration:
+
+```javascript src/components/ProductModal.js
+const SubProductCard = ({ subProduct }) => {
+  const { addItem, removeItem, getItemQuantity } = useCart();
+  const quantity = getItemQuantity(subProduct.id);
+
+  return (
+    <div className="sub-product-card" onClick={() => addItem(subProduct)}>
+      <div className="sub-product-image">
+        <ProductImage 
+          src={subProduct.image}
+          alt={`${subProduct.name} resmi`}
+          placeholder={subProduct.imagePlaceholder}
+        />
+      </div>
+      
+      <h4 className="sub-product-name">{subProduct.name}</h4>
+      <div className="sub-product-price">{subProduct.price}</div>
+      
+      {quantity > 0 ? (
+        <div className="quantity-controls">
+          <button onClick={handleRemoveFromCart}>−</button>
+          <span>{quantity}</span>
+          <button onClick={handleAddToCart}>+</button>
+        </div>
+      ) : (
+        <button onClick={handleAddToCart}>
+          {t('addToCart')}
+        </button>
+      )}
+    </div>
+  );
+};
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+
+<Card title="Unique IDs" icon="fingerprint">
+Ensure all product and sub-product IDs are unique across the entire catalog to prevent cart conflicts.
+</Card>
+
+<Card title="Image Optimization" icon="image">
+Use optimized images and appropriate emoji placeholders to improve loading performance.
+</Card>
+
+<Card title="Price Formatting" icon="dollar-sign">
+Maintain consistent price formatting (e.g., "160 TL") for proper cart total calculations.
+</Card>
+
+<Card title="Accessibility" icon="universal-access">
+Include descriptive alt text for images and proper ARIA labels for interactive elements.
+</Card>
+
+</CardGroup>
+
+## Adding New Products
+
+To add a new product to the catalog:
+
+1. **Add product images** to `/public/images/`
+2. **Choose an emoji** placeholder that represents the product
+3. **Add product data** to the `PRODUCTS` array:
+
+```javascript src/data/products.js
+{
+  id: 10, // Next available ID
+  name: "New Water Brand",
+  price: "Seçenekleri Görün",
+  image: "/images/new-brand.png",
+  imagePlaceholder: "💧",
+  whatsappMessage: "Merhaba New Water Brand sipariş etmek istiyorum. Adresim: ",
+  subProducts: [
+    {
+      id: 101, // Unique sub-product ID
+      name: "New Water Brand 19Lt Damacana",
+      price: "180 TL",
+      image: "/images/new-19.png",
+      imagePlaceholder: "🏺",
+      whatsappMessage: "Merhaba New Water Brand 19L sipariş etmek istiyorum. Adresim: "
+    }
+  ]
+}
+```
+
+<Tip>
+Start sub-product IDs at `(mainProductId * 10 + 1)` to maintain clear ID organization.
+</Tip>
+
+## Related Documentation
+
+<CardGroup cols={2}>
+
+<Card title="Shopping Cart" icon="cart-shopping" href="/features/shopping-cart">
+Learn how products are added to and managed in the shopping cart
+</Card>
+
+<Card title="WhatsApp Ordering" icon="whatsapp" href="/features/whatsapp-ordering">
+See how product data is used to generate WhatsApp order messages
+</Card>
+
+</CardGroup>

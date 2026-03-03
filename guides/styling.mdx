@@ -1,0 +1,717 @@
+---
+title: 'Styling & Customization'
+description: 'Learn how to customize colors, themes, and component styles in your application'
+icon: 'palette'
+---
+
+## Overview
+
+The Bİ DOLU İÇECEK application uses CSS for styling, organized in `src/App.css`. This guide covers theme customization, color schemes, responsive design, and component-specific styling.
+
+## CSS Structure
+
+The main stylesheet is organized into sections:
+
+```css src/App.css
+/* 1. Reset and Base Styles (lines 1-22) */
+/* 2. Header Styles (lines 24-167) */
+/* 3. Scroll Indicators (lines 169-253) */
+/* 4. Main Content (lines 255-290) */
+/* 5. Product Cards (lines 292-356) */
+/* 6. Modal Styles (lines 358-683) */
+/* 7. Sub-Product Cards (lines 578-750) */
+/* 8. Quantity Controls (lines 807-861) */
+/* 9. Order Button (lines 885-983) */
+/* 10. Video Modal (lines 985-1121) */
+/* 11. Responsive Design (lines 1143-1519) */
+```
+
+## Theme Colors
+
+The application uses a blue gradient theme with clean white cards.
+
+### Primary Background Gradient
+
+From `src/App.css` (line 14):
+
+```css src/App.css
+body {
+  background: linear-gradient(180deg, #5ebbfd 0%, #0053b2 100%);
+  min-height: 100vh;
+}
+```
+
+**Customizing the background:**
+
+```css
+/* Ocean blue (current) */
+background: linear-gradient(180deg, #5ebbfd 0%, #0053b2 100%);
+
+/* Purple gradient */
+background: linear-gradient(180deg, #a78bfa 0%, #7c3aed 100%);
+
+/* Green gradient */
+background: linear-gradient(180deg, #6ee7b7 0%, #059669 100%);
+
+/* Sunset gradient */
+background: linear-gradient(180deg, #fbbf24 0%, #f97316 100%);
+
+/* Solid color */
+background: #f3f4f6;
+```
+
+### Accent Colors
+
+Key accent colors used throughout:
+
+| Element | Color | Usage |
+|---------|-------|-------|
+| Primary Blue | `#1565c0` | Phone number, social icons |
+| Success Green | `#10b981` | Add to cart, order button |
+| Error Red | `#ef4444` | Remove from cart, warnings |
+| Purple Gradient | `#a855f7` to `#ec4899` | Product card placeholders |
+
+## Component Styling
+
+### Header
+
+The header has a frosted glass effect:
+
+```css src/App.css (lines 25-37)
+.header {
+  background: rgba(255, 255, 255, 0.80);  /* 80% white */
+  color: #333;
+  padding: 2rem 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  backdrop-filter: blur(10px);            /* Frosted glass */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+```
+
+**Customizing header transparency:**
+
+<Steps>
+  <Step title="Open App.css">
+    Navigate to `src/App.css` in your editor.
+  </Step>
+
+  <Step title="Modify .header background">
+    Change the alpha value (0.80 = 80% opacity):
+
+    ```css
+    /* More transparent (50%) */
+    background: rgba(255, 255, 255, 0.50);
+
+    /* Fully opaque */
+    background: rgba(255, 255, 255, 1.0);
+
+    /* Colored header */
+    background: rgba(21, 101, 192, 0.90);
+    color: white;  /* Change text to white */
+    ```
+  </Step>
+
+  <Step title="Save and test">
+    Refresh your browser to see the changes.
+  </Step>
+</Steps>
+
+### Logo Sizing
+
+From `src/App.css` (lines 61-66):
+
+```css src/App.css
+.header-logo {
+  height: 90px;
+  width: auto;
+  max-width: 350px;
+  object-fit: contain;
+}
+```
+
+**Adjusting logo size:**
+
+```css
+/* Larger logo */
+.header-logo {
+  height: 120px;
+  max-width: 450px;
+}
+
+/* Smaller logo */
+.header-logo {
+  height: 60px;
+  max-width: 250px;
+}
+```
+
+### Product Cards
+
+Main product cards on the homepage:
+
+```css src/App.css (lines 274-288)
+.product-card {
+  background: white;
+  border-radius: 25px;
+  padding: 2rem;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.2);
+  width: 500px;
+  height: 520px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+```
+
+**Customizing card appearance:**
+
+<Tip>
+Adjust `border-radius` for rounded vs sharp corners.
+</Tip>
+
+```css
+/* More rounded */
+.product-card {
+  border-radius: 35px;
+}
+
+/* Sharp corners */
+.product-card {
+  border-radius: 5px;
+}
+
+/* Colored cards */
+.product-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+/* Stronger shadow */
+.product-card {
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.3);
+}
+```
+
+### Placeholder Gradients
+
+Product image placeholders use gradient backgrounds:
+
+```css src/App.css (lines 302-316)
+.image-placeholder {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  height: 360px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6rem;
+}
+```
+
+**Changing placeholder colors:**
+
+```css
+/* Blue gradient */
+.image-placeholder {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+}
+
+/* Green gradient */
+.image-placeholder {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+}
+
+/* Purple gradient (original) */
+.image-placeholder {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+```
+
+### Sub-Product Cards
+
+Cards displayed in product modals:
+
+```css src/App.css (lines 579-594)
+.sub-product-card {
+  background: white;
+  border-radius: 20px;
+  padding: 1rem;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 280px;
+  height: 320px;
+}
+```
+
+### Order Button
+
+The fixed bottom order button:
+
+```css src/App.css (lines 896-907)
+.order-button {
+  width: 100%;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.125rem;
+  font-weight: 700;
+  box-shadow: 0 8px 30px rgba(16, 185, 129, 0.3);
+}
+```
+
+**Customizing button color:**
+
+```css
+/* Blue button */
+.order-button {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.3);
+}
+
+/* Purple button */
+.order-button {
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  box-shadow: 0 8px 30px rgba(168, 85, 247, 0.3);
+}
+
+/* Solid color button */
+.order-button {
+  background: #10b981;
+  box-shadow: 0 8px 30px rgba(16, 185, 129, 0.3);
+}
+```
+
+## Responsive Design
+
+The application uses a mobile-first approach with breakpoints.
+
+### Breakpoints
+
+| Breakpoint | Screen Width | Usage |
+|------------|--------------|-------|
+| Mobile | < 480px | Small phones |
+| Tablet | 481px - 768px | Tablets, large phones |
+| Desktop | > 768px | Laptops, desktops |
+
+### Mobile Styles
+
+From `src/App.css` (lines 1387-1485):
+
+```css src/App.css
+@media (max-width: 768px) {
+  .header-logo {
+    height: 70px;
+    max-width: 250px;
+  }
+  
+  .product-card {
+    width: 350px;
+    height: 380px;
+    padding: 1.5rem;
+  }
+  
+  .main-content {
+    padding: 1rem;
+    margin-top: 150px;
+  }
+}
+```
+
+**Adjusting mobile layout:**
+
+<Steps>
+  <Step title="Find mobile breakpoint">
+    Locate the `@media (max-width: 768px)` section in `src/App.css`.
+  </Step>
+
+  <Step title="Modify mobile styles">
+    ```css
+    @media (max-width: 768px) {
+      /* Larger product cards on mobile */
+      .product-card {
+        width: 380px;
+        height: 420px;
+      }
+      
+      /* More spacing */
+      .main-content {
+        margin-top: 180px;
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Test on mobile">
+    Use browser DevTools (F12) to test responsive design:
+    - Chrome: Toggle device toolbar (Ctrl+Shift+M)
+    - Test on iPhone, iPad, Android viewports
+  </Step>
+</Steps>
+
+### Desktop Enhancements
+
+Desktop-specific styles for larger screens:
+
+```css src/App.css (lines 1144-1204)
+@media (min-width: 768px) {
+  .sub-product-card {
+    max-width: 320px;
+    height: 380px;
+    padding: 1.5rem;
+  }
+  
+  .sub-product-image {
+    height: 180px;
+  }
+}
+```
+
+## Custom Color Schemes
+
+### Creating a Purple Theme
+
+<Steps>
+  <Step title="Update background gradient">
+    ```css src/App.css
+    body {
+      background: linear-gradient(180deg, #c084fc 0%, #7c3aed 100%);
+    }
+    ```
+  </Step>
+
+  <Step title="Change accent colors">
+    ```css src/App.css
+    .contact-info .phone {
+      background: rgba(124, 58, 237, 0.1);
+      color: #7c3aed;
+      border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    
+    .social-icon {
+      background: rgba(124, 58, 237, 0.1);
+      color: #7c3aed;
+      border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    
+    .social-icon:hover {
+      background: rgba(124, 58, 237, 0.2);
+      color: #6d28d9;
+    }
+    ```
+  </Step>
+
+  <Step title="Update button gradients">
+    ```css src/App.css
+    .order-button {
+      background: linear-gradient(135deg, #a855f7, #7c3aed);
+      box-shadow: 0 8px 30px rgba(168, 85, 247, 0.3);
+    }
+    
+    .order-button:hover {
+      background: linear-gradient(135deg, #9333ea, #6d28d9);
+    }
+    ```
+  </Step>
+</Steps>
+
+### Creating a Dark Theme
+
+```css src/App.css
+/* Dark background */
+body {
+  background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+}
+
+/* Dark header */
+.header {
+  background: rgba(31, 41, 55, 0.90);
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Dark cards */
+.product-card {
+  background: #374151;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.product-name {
+  color: white;
+}
+
+.product-price {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+```
+
+## Typography
+
+The application uses system fonts for optimal performance:
+
+```css src/App.css (lines 8-12)
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 
+    'Helvetica Neue', sans-serif;
+}
+```
+
+### Font Sizes
+
+| Element | Desktop | Mobile | CSS Line |
+|---------|---------|--------|----------|
+| Logo text | 2.5rem | 1.8rem | 70, 1406 |
+| Product name | 2rem | 1.7rem | 339, 1458 |
+| Product price | 1.8rem | 1.5rem | 348, 1462 |
+| Sub-product name | 1.25rem | 1rem | 753, 1164 |
+| Order button | 1.125rem | 1rem | 902, 1214 |
+
+**Changing font sizes:**
+
+```css
+/* Larger product names */
+.product-name {
+  font-size: 2.5rem;  /* Instead of 2rem */
+}
+
+@media (max-width: 768px) {
+  .product-name {
+    font-size: 2rem;  /* Instead of 1.7rem */
+  }
+}
+```
+
+### Custom Fonts
+
+To use a custom font like Google Fonts:
+
+<Steps>
+  <Step title="Import font">
+    Add to the top of `src/App.css`:
+
+    ```css src/App.css
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+    ```
+  </Step>
+
+  <Step title="Update font-family">
+    ```css src/App.css
+    body {
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    ```
+  </Step>
+
+  <Step title="Test font loading">
+    Check that fonts load in browser DevTools Network tab.
+  </Step>
+</Steps>
+
+## Animations & Transitions
+
+### Hover Effects
+
+Cards have scale animations on hover:
+
+```css src/App.css (lines 596-603)
+.sub-product-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.sub-product-card:active {
+  transform: scale(0.95);
+}
+```
+
+**Customizing animations:**
+
+```css
+/* Faster animation */
+.sub-product-card {
+  transition: all 0.2s ease;  /* Instead of 0.3s */
+}
+
+/* Stronger scale effect */
+.sub-product-card:hover {
+  transform: scale(1.1);
+}
+
+/* Disable animations */
+.sub-product-card {
+  transition: none;
+}
+.sub-product-card:hover {
+  transform: none;
+}
+```
+
+### Scroll Indicators
+
+Animated scroll-down indicator:
+
+```css src/App.css (lines 235-253)
+@keyframes fadeInBounce {
+  0%, 100% {
+    opacity: var(--custom-opacity, 1);
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    opacity: var(--custom-opacity, 1);
+    transform: translateX(-50%) translateY(-5px);
+  }
+}
+```
+
+## Spacing & Layout
+
+### Card Spacing
+
+Gap between product cards:
+
+```css src/App.css (line 269)
+.products-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;  /* Space between cards */
+}
+```
+
+**Adjusting spacing:**
+
+```css
+/* More space */
+.products-grid {
+  gap: 3.5rem;
+}
+
+/* Less space */
+.products-grid {
+  gap: 1.5rem;
+}
+```
+
+### Padding
+
+Main content padding:
+
+```css src/App.css (lines 256-263)
+.main-content {
+  padding: 2rem;           /* Desktop */
+  margin-top: 120px;       /* Space below fixed header */
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1rem;         /* Mobile */
+    margin-top: 150px;
+  }
+}
+```
+
+## Performance Optimization
+
+### CSS Best Practices
+
+<Tip>
+Minimize CSS file size and avoid unused styles for better performance.
+</Tip>
+
+**Remove unused CSS:**
+
+```bash
+# Use PurgeCSS to remove unused styles
+npm install -D @fullhuman/postcss-purgecss
+```
+
+**Optimize animations:**
+
+```css
+/* Use transform and opacity for GPU acceleration */
+.product-card:hover {
+  transform: translateY(-5px);  /* GPU-accelerated */
+  opacity: 0.95;
+}
+
+/* Avoid animating these properties (slow) */
+.product-card:hover {
+  margin-top: -5px;  /* ✗ Causes reflow */
+  width: 110%;       /* ✗ Causes reflow */
+}
+```
+
+### Backdrop Filter Support
+
+Fallback for browsers without backdrop-filter:
+
+```css src/App.css (lines 367-371)
+@supports (backdrop-filter: blur()) {
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+  }
+}
+```
+
+## Common Customizations
+
+### Change Border Radius Globally
+
+```css
+/* Rounder design */
+.header { border-radius: 0 0 30px 30px; }
+.product-card { border-radius: 30px; }
+.sub-product-card { border-radius: 25px; }
+.order-button { border-radius: 60px; }
+
+/* Sharper design */
+.header { border-radius: 0; }
+.product-card { border-radius: 10px; }
+.sub-product-card { border-radius: 8px; }
+.order-button { border-radius: 8px; }
+```
+
+### Adjust Shadow Intensity
+
+```css
+/* Subtle shadows */
+.product-card {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Strong shadows (current) */
+.product-card {
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.2);
+}
+
+/* No shadows (flat design) */
+.product-card {
+  box-shadow: none;
+  border: 2px solid #e5e7eb;
+}
+```
+
+### Modify Header Height
+
+```css
+.header {
+  padding: 3rem 0;  /* Taller header (instead of 2rem) */
+}
+
+.main-content {
+  margin-top: 150px;  /* Adjust for taller header */
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Adding Products" icon="box" href="/guides/adding-products">
+    Learn how to add products to your styled application
+  </Card>
+  <Card title="Quick Start" icon="code" href="/quickstart">
+    Get your application running
+  </Card>
+</CardGroup>

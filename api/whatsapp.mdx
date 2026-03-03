@@ -1,0 +1,253 @@
+---
+title: 'WhatsApp API'
+description: 'API reference for WhatsApp integration and messaging'
+---
+
+## Overview
+
+The WhatsApp API provides functions to create WhatsApp links and open WhatsApp conversations with pre-filled messages.
+
+**Source:** `src/config/whatsapp.js`
+
+---
+
+## Functions
+
+### openWhatsApp()
+
+Opens WhatsApp in a new tab with a pre-filled message.
+
+```javascript
+import { openWhatsApp } from '@/config/whatsapp';
+
+const ProductCard = ({ product }) => {
+  const handleWhatsAppOrder = () => {
+    openWhatsApp(product.name);
+  };
+  
+  return (
+    <button onClick={handleWhatsAppOrder}>
+      Order via WhatsApp
+    </button>
+  );
+};
+```
+
+<ParamField path="productName" type="string" required>
+  Name of the product to include in the message
+</ParamField>
+
+<ParamField path="customMessage" type="string" optional>
+  Custom message to send. If not provided, uses product-specific or default message template
+</ParamField>
+
+<ResponseField name="Behavior">
+  - Opens WhatsApp in a new browser tab
+  - Uses `window.open()` with `noopener,noreferrer` for security
+  - Message is URL-encoded automatically
+  - Message selection priority:
+    1. Custom message (if provided)
+    2. Product-specific message from `WHATSAPP_CONFIG.productMessages`
+    3. Default message template with product name
+</ResponseField>
+
+---
+
+### createWhatsAppURL()
+
+Creates a WhatsApp URL with a pre-filled message.
+
+```javascript
+import { createWhatsAppURL } from '@/config/whatsapp';
+
+const url = createWhatsAppURL('ABC Su');
+console.log(url);
+// "https://wa.me/905303099887?text=Merhaba%2C%20ABC%20Su%20sipari%C5%9F%20etmek%20istiyorum."
+
+// With custom message
+const customUrl = createWhatsAppURL('ABC Su', 'Fiyat bilgisi alabilir miyim?');
+```
+
+<ParamField path="productName" type="string" required>
+  Name of the product to include in the message
+</ParamField>
+
+<ParamField path="customMessage" type="string" optional>
+  Custom message to send. If not provided, uses product-specific or default message template
+</ParamField>
+
+<ParamField path="returns" type="string">
+  Full WhatsApp URL with encoded message
+</ParamField>
+
+<ResponseField name="URL Format">
+  Returns URL in format: `https://wa.me/{phoneNumber}?text={encodedMessage}`
+  
+  Example:
+  ```
+  https://wa.me/905303099887?text=Merhaba%2C%20ABC%20Su%20sipari%C5%9F%20etmek%20istiyorum.
+  ```
+</ResponseField>
+
+---
+
+## Configuration
+
+### WHATSAPP_CONFIG
+
+WhatsApp configuration object.
+
+```javascript
+import { WHATSAPP_CONFIG } from '@/config/whatsapp';
+
+console.log(WHATSAPP_CONFIG.phoneNumber); // "905303099887"
+```
+
+<Expandable title="Configuration Properties">
+  <ResponseField name="phoneNumber" type="string" default="905303099887">
+    WhatsApp phone number with country code (without + symbol)
+    
+    Format: `{countryCode}{phoneNumber}`
+    - Turkey example: `905303099887` (90 = country code)
+  </ResponseField>
+  
+  <ResponseField name="defaultMessage" type="string">
+    Default message template. Supports `{productName}` placeholder
+    
+    Default: `"Merhaba, {productName} sipariş etmek istiyorum."`
+  </ResponseField>
+  
+  <ResponseField name="productMessages" type="object">
+    Product-specific message templates. Keys are product names (lowercase), values are custom messages
+    
+    Example:
+    ```javascript
+    {
+      "abc su": "Merhaba! ABC Su ürününüz hakkında detaylı bilgi alabilir miyim?"
+    }
+    ```
+  </ResponseField>
+</Expandable>
+
+---
+
+## Message Formatting
+
+### Message Selection Priority
+
+The API selects messages in this order:
+
+1. **Custom message** (if provided as parameter)
+2. **Product-specific message** from `WHATSAPP_CONFIG.productMessages[productName.toLowerCase()]`
+3. **Default message template** with `{productName}` replaced
+
+### Adding Product-Specific Messages
+
+```javascript
+// In whatsapp.js
+export const WHATSAPP_CONFIG = {
+  phoneNumber: "905303099887",
+  defaultMessage: "Merhaba, {productName} sipariş etmek istiyorum.",
+  productMessages: {
+    "abc su": "ABC Su hakkında bilgi almak istiyorum.",
+    "damacana 19l": "19L Damacana sipariş etmek istiyorum. Teslimat süresi nedir?",
+    "su paketi": "Su paketi fiyatları nedir?"
+  }
+};
+```
+
+---
+
+## Usage Examples
+
+### Basic Product Order
+
+```javascript
+import { openWhatsApp } from '@/config/whatsapp';
+
+const ProductDetail = ({ product }) => (
+  <div>
+    <h2>{product.name}</h2>
+    <button onClick={() => openWhatsApp(product.name)}>
+      Order via WhatsApp
+    </button>
+  </div>
+);
+```
+
+### Cart Order with Custom Message
+
+```javascript
+import { openWhatsApp } from '@/config/whatsapp';
+import { useCart } from '@/context/CartContext';
+
+const CartCheckout = () => {
+  const { getCartMessage } = useCart();
+  
+  const handleCheckout = () => {
+    const cartMessage = getCartMessage();
+    openWhatsApp('Sepet', cartMessage);
+  };
+  
+  return (
+    <button onClick={handleCheckout}>
+      Send Order via WhatsApp
+    </button>
+  );
+};
+```
+
+### Share WhatsApp Link
+
+```javascript
+import { createWhatsAppURL } from '@/config/whatsapp';
+
+const ShareButton = ({ productName }) => {
+  const whatsappUrl = createWhatsAppURL(productName);
+  
+  return (
+    <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+      <WhatsAppIcon /> Share on WhatsApp
+    </a>
+  );
+};
+```
+
+### Query Product Information
+
+```javascript
+import { openWhatsApp } from '@/config/whatsapp';
+
+const QuickInfoButton = ({ productName }) => {
+  const askQuestion = () => {
+    const message = `${productName} hakkında fiyat ve teslimat bilgisi alabilir miyim?`;
+    openWhatsApp(productName, message);
+  };
+  
+  return (
+    <button onClick={askQuestion}>
+      Ask about this product
+    </button>
+  );
+};
+```
+
+---
+
+## Phone Number Format
+
+The phone number must be in international format without the `+` symbol:
+
+| Country | Format | Example |
+|---------|--------|----------|
+| Turkey | 90XXXXXXXXXX | 905303099887 |
+| USA | 1XXXXXXXXXX | 12025551234 |
+| UK | 44XXXXXXXXXX | 447700900123 |
+
+<Warning>
+  Do not include:
+  - Plus sign (+)
+  - Spaces
+  - Dashes or parentheses
+  - Leading zeros after country code
+</Warning>

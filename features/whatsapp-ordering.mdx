@@ -1,0 +1,411 @@
+---
+title: 'WhatsApp Ordering'
+description: 'Send orders directly to WhatsApp with pre-formatted messages'
+icon: 'whatsapp'
+---
+
+The WhatsApp ordering system allows customers to send their orders directly via WhatsApp with pre-formatted messages, streamlining the ordering process.
+
+## Configuration
+
+WhatsApp settings are configured in `src/config/whatsapp.js`:
+
+```javascript src/config/whatsapp.js
+export const WHATSAPP_CONFIG = {
+  // WhatsApp phone number (with country code, without + sign)
+  phoneNumber: "905303099887", // Example: Turkey (90) + phone number
+  
+  // Default message template
+  defaultMessage: "Merhaba, {productName} sipariş etmek istiyorum.",
+  
+  // Custom messages per product
+  productMessages: {
+    "abc su": "Merhaba! ABC Su ürününüz hakkında detaylı bilgi alabilir miyim? Fiyat ve teslimat koşulları nelerdir?",
+    // More product messages can be added here
+  }
+};
+```
+
+<Note>
+**Phone Number Format:** Use international format without the `+` sign. For Turkey, use `90` followed by the 10-digit number.
+</Note>
+
+### Updating the Phone Number
+
+To change the WhatsApp business number:
+
+```javascript src/config/whatsapp.js
+export const WHATSAPP_CONFIG = {
+  phoneNumber: "905551234567", // Your new number
+  // ... rest of config
+};
+```
+
+## WhatsApp URL Generation
+
+### Create WhatsApp URL
+
+Generate a WhatsApp Web URL with pre-filled message:
+
+```javascript src/config/whatsapp.js
+export const createWhatsAppURL = (productName, customMessage = null) => {
+  const message = customMessage || 
+    WHATSAPP_CONFIG.productMessages[productName] || 
+    WHATSAPP_CONFIG.defaultMessage.replace('{productName}', productName);
+  
+  const encodedMessage = encodeURIComponent(message);
+  return `https://wa.me/${WHATSAPP_CONFIG.phoneNumber}?text=${encodedMessage}`;
+};
+```
+
+**Example Output:**
+```
+https://wa.me/905303099887?text=Merhaba%2C%20Fuska%20Su%20sipari%C5%9F%20etmek%20istiyorum.
+```
+
+<Accordion title="Message Priority Logic">
+
+1. **Custom Message** - If provided as parameter
+2. **Product-Specific Message** - From `productMessages` object
+3. **Default Template** - Fallback with product name replacement
+
+</Accordion>
+
+### Open WhatsApp
+
+Open WhatsApp in a new tab:
+
+```javascript src/config/whatsapp.js
+export const openWhatsApp = (productName, customMessage = null) => {
+  const url = createWhatsAppURL(productName, customMessage);
+  window.open(url, '_blank', 'noopener,noreferrer');
+};
+```
+
+<Warning>
+Always use `noopener,noreferrer` when opening external links to prevent security vulnerabilities.
+</Warning>
+
+## Order Button Integration
+
+The `OrderButton` component integrates cart data with WhatsApp:
+
+```javascript src/components/OrderButton.js
+import { useCart } from '../context/CartContext';
+import { openWhatsApp } from '../config/whatsapp';
+import { trackWhatsAppClick, trackError } from '../utils/analytics';
+
+const OrderButton = () => {
+  const { getTotalItems, getTotalPrice, getCartMessage, clearCart, items } = useCart();
+  const totalItems = getTotalItems();
+  const totalPrice = getTotalPrice();
+
+  const handleOrderClick = async () => {
+    try {
+      const message = getCartMessage();
+      
+      // Analytics tracking
+      trackWhatsAppClick('Sepet Siparişi');
+      
+      // Open WhatsApp
+      openWhatsApp('Sepet Siparişi', message);
+      
+      // Clear cart
+      clearCart();
+    } catch (error) {
+      trackError(error, 'Order Button Click Handler');
+      
+      // Fallback: Direct WhatsApp link
+      const message = getCartMessage();
+      const fallbackUrl = `https://wa.me/905551234567?text=${encodeURIComponent(message)}`;
+      window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
+      
+      clearCart();
+    }
+  };
+
+  if (totalItems === 0) return null;
+
+  return (
+    <button onClick={handleOrderClick} className="order-button">
+      Sipariş Ver - {totalPrice.toFixed(2)} TL
+    </button>
+  );
+};
+```
+
+## Message Formatting
+
+### Cart Message Format
+
+The cart generates messages in this format:
+
+```javascript src/context/CartContext.js
+const getCartMessage = () => {
+  if (state.items.length === 0) return '';
+  
+  const itemMessages = state.items.map(item => 
+    `${item.quantity} adet - ${item.name}`
+  );
+  
+  return `${itemMessages.join('\n')}\nsipariş etmek istiyorum.`;
+};
+```
+
+**Example Cart Message:**
+```
+2 adet - Fuska Su 19Lt Damacana
+1 adet - Pınar Su 24x0.5L Şişe
+3 adet - Sultan Su 19Lt Tek Kullanımlık Damacana
+sipariş etmek istiyorum.
+```
+
+### Single Product Messages
+
+Each product has its own WhatsApp message template:
+
+```javascript src/data/products.js
+{
+  id: 11,
+  name: "Fuska Su 19Lt Damacana",
+  whatsappMessage: "Merhaba Sultan Su 19L damacana sipariş etmek istiyorum. Adresim: "
+}
+```
+
+<Tip>
+Include "Adresim:" (My address:) in messages to prompt customers to add their delivery address.
+</Tip>
+
+## Service Hours Integration
+
+The order button respects service hours:
+
+```javascript src/components/OrderButton.js
+import { isServiceOpen, getServiceHoursText } from '../config/serviceHours';
+
+const OrderButton = () => {
+  const [serviceOpen, setServiceOpen] = useState(false);
+
+  useEffect(() => {
+    const checkServiceStatus = async () => {
+      const isOpen = await isServiceOpen();
+      setServiceOpen(isOpen);
+    };
+
+    checkServiceStatus();
+    const interval = setInterval(checkServiceStatus, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleOrderClick = async () => {
+    if (!serviceOpen) return; // Block orders outside service hours
+    // ... order logic
+  };
+
+  return (
+    <button 
+      onClick={handleOrderClick}
+      disabled={!serviceOpen}
+      aria-label={
+        !serviceOpen 
+          ? `Servis saatleri dışında, ${getServiceHoursText()}`
+          : `${totalItems} ürün ile sipariş ver`
+      }
+    >
+      {!serviceOpen
+        ? 'Servis Saatleri Dışında'
+        : `Sipariş Ver - ${totalPrice.toFixed(2)} TL`
+      }
+    </button>
+  );
+};
+```
+
+<Note>
+Service hours are checked every minute to ensure real-time status updates.
+</Note>
+
+## Order Validation
+
+The order button includes multiple validation checks:
+
+<CodeGroup>
+
+```javascript Service Hours
+if (!serviceOpen) {
+  return; // Block order
+}
+```
+
+```javascript Minimum Order
+import { validateOrderAmount, ORDER_LIMITS } from '../config/orderLimits';
+
+const orderValidation = validateOrderAmount(totalPrice);
+if (!orderValidation.isValid) {
+  return; // Show minimum order message
+}
+```
+
+```javascript Damacana Time Restriction
+import { checkCartForDamacana } from '../config/damacanaLimits';
+
+const damacanaValidation = checkCartForDamacana(items);
+if (!damacanaValidation.isAllowed) {
+  return; // Block damacana after cutoff time
+}
+```
+
+</CodeGroup>
+
+## Analytics Tracking
+
+Track WhatsApp order events:
+
+```javascript src/components/OrderButton.js
+import { trackWhatsAppClick, trackError } from '../utils/analytics';
+
+const handleOrderClick = async () => {
+  try {
+    trackWhatsAppClick('Sepet Siparişi');
+    openWhatsApp('Sepet Siparişi', message);
+  } catch (error) {
+    trackError(error, 'Order Button Click Handler');
+  }
+};
+```
+
+## Multi-Language Support
+
+WhatsApp messages support multiple languages:
+
+```javascript src/components/OrderButton.js
+import { t } from '../config/language';
+
+<button>
+  {!serviceOpen
+    ? t('orderUnavailable')
+    : t('orderButton') + ` - ${totalPrice.toFixed(2)} TL`
+  }
+</button>
+```
+
+**Turkish:**
+```
+Sipariş Ver - 480.00 TL
+```
+
+**Arabic:**
+```
+اطلب - 480.00 TL
+```
+
+## Error Handling
+
+Implement fallback mechanisms for WhatsApp failures:
+
+```javascript src/components/OrderButton.js
+try {
+  openWhatsApp('Sepet Siparişi', message);
+  clearCart();
+} catch (error) {
+  trackError(error, 'Order Button Click Handler');
+  
+  // Fallback: Direct link
+  const fallbackUrl = `https://wa.me/905551234567?text=${encodeURIComponent(message)}`;
+  window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
+  
+  clearCart();
+}
+```
+
+<Warning>
+Always clear the cart after opening WhatsApp to prevent duplicate orders, even if there's an error.
+</Warning>
+
+## Testing WhatsApp Integration
+
+Test your WhatsApp integration:
+
+1. **Development Mode:** Use your personal number
+2. **Check Message Encoding:** Verify special characters display correctly
+3. **Mobile Testing:** Test on both mobile and desktop
+4. **Error Scenarios:** Test with blocked popups, offline mode
+
+```javascript Testing Configuration
+export const WHATSAPP_CONFIG = {
+  phoneNumber: "905551234567", // Test number
+  // ... rest of config
+};
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+
+<Card title="Clear Messages" icon="message">
+Keep WhatsApp messages clear and concise. Include product details and prompt for delivery address.
+</Card>
+
+<Card title="URL Encoding" icon="code">
+Always use `encodeURIComponent()` for message text to handle special characters properly.
+</Card>
+
+<Card title="Analytics" icon="chart-line">
+Track WhatsApp clicks to measure conversion rates and popular products.
+</Card>
+
+<Card title="Error Recovery" icon="life-ring">
+Implement fallback URLs in case the primary WhatsApp link fails.
+</Card>
+
+</CardGroup>
+
+## Customization Examples
+
+### Add Product Prices to Message
+
+```javascript Custom Message Format
+const getCartMessage = () => {
+  if (state.items.length === 0) return '';
+  
+  const itemMessages = state.items.map(item => 
+    `${item.quantity} adet - ${item.name} (${item.price})`
+  );
+  
+  const totalPrice = getTotalPrice();
+  
+  return `${itemMessages.join('\n')}\n\nToplam: ${totalPrice.toFixed(2)} TL\n\nsipariş etmek istiyorum.\nAdresim: `;
+};
+```
+
+### Add Order Timestamp
+
+```javascript Timestamp Message
+const getCartMessage = () => {
+  const timestamp = new Date().toLocaleString('tr-TR');
+  const itemMessages = state.items.map(item => 
+    `${item.quantity} adet - ${item.name}`
+  );
+  
+  return `Sipariş Tarihi: ${timestamp}\n\n${itemMessages.join('\n')}\n\nsipariş etmek istiyorum.`;
+};
+```
+
+## Related Documentation
+
+<CardGroup cols={2}>
+
+<Card title="Shopping Cart" icon="cart-shopping" href="/features/shopping-cart">
+Learn how cart data is collected for WhatsApp orders
+</Card>
+
+<Card title="Service Hours" icon="clock" href="/features/service-hours">
+Understand how service hours affect order availability
+</Card>
+
+<Card title="Multi-Language" icon="language" href="/features/multi-language">
+See how WhatsApp messages support multiple languages
+</Card>
+
+</CardGroup>

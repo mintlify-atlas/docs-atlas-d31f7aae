@@ -1,0 +1,236 @@
+---
+title: 'Service Hours API'
+description: 'API reference for service hours configuration and management'
+---
+
+## Overview
+
+The Service Hours API provides functions to manage store operating hours, check service availability, and load dynamic settings from Edge Config.
+
+**Source:** `src/config/serviceHours.js`
+
+---
+
+## Functions
+
+### isServiceOpen()
+
+Checks whether the service is currently open based on configured hours, store status, and special closures.
+
+```javascript
+import { isServiceOpen } from '@/config/serviceHours';
+
+const checkService = async () => {
+  const isOpen = await isServiceOpen();
+  if (isOpen) {
+    console.log('Service is available');
+  } else {
+    console.log('Service is closed');
+  }
+};
+```
+
+<ParamField path="returns" type="Promise<boolean>">
+  Returns `true` if service is open, `false` if closed
+</ParamField>
+
+<ResponseField name="Behavior">
+  - Returns `false` if store is manually closed or in maintenance mode
+  - Returns `true` if test mode is enabled
+  - Checks if current date is in `closedDates` array
+  - Validates weekday/weekend availability
+  - Compares current time against service hours
+</ResponseField>
+
+---
+
+### getServiceHoursText()
+
+Returns a formatted string representation of service hours.
+
+```javascript
+import { getServiceHoursText } from '@/config/serviceHours';
+
+const hours = getServiceHoursText();
+console.log(hours); // "08:30 - 20:30"
+```
+
+<ParamField path="returns" type="string">
+  Formatted time range (e.g., "08:30 - 20:30")
+</ParamField>
+
+---
+
+### getNextServiceTime()
+
+Calculates the next service opening time.
+
+```javascript
+import { getNextServiceTime } from '@/config/serviceHours';
+
+const nextOpen = getNextServiceTime();
+if (nextOpen) {
+  console.log(`Service opens at: ${nextOpen.toLocaleString()}`);
+}
+```
+
+<ParamField path="returns" type="Date | null">
+  Returns a Date object for tomorrow's opening time, or `null` if test mode is enabled
+</ParamField>
+
+---
+
+### loadEdgeConfigSettings()
+
+Loads service configuration from Edge Config and updates active settings.
+
+```javascript
+import { loadEdgeConfigSettings } from '@/config/serviceHours';
+
+await loadEdgeConfigSettings();
+```
+
+<ParamField path="returns" type="Promise<void>">
+  Async function that updates `ACTIVE_SERVICE_HOURS` and `STORE_STATUS`
+</ParamField>
+
+<ResponseField name="Side Effects">
+  - Merges Edge Config settings with default settings
+  - Updates global `ACTIVE_SERVICE_HOURS` variable
+  - Updates global `STORE_STATUS` variable
+  - Logs loaded settings or warning if loading fails
+</ResponseField>
+
+---
+
+### getActiveServiceHours()
+
+Returns the current active service hours configuration.
+
+```javascript
+import { getActiveServiceHours } from '@/config/serviceHours';
+
+const config = getActiveServiceHours();
+console.log(config.startHour); // 8
+console.log(config.endHour);   // 20
+```
+
+<ParamField path="returns" type="object">
+  Service hours configuration object (see DEFAULT_SERVICE_HOURS structure)
+</ParamField>
+
+---
+
+### getStoreStatus()
+
+Returns the current store status.
+
+```javascript
+import { getStoreStatus } from '@/config/serviceHours';
+
+const status = getStoreStatus();
+if (status.maintenanceMode) {
+  console.log(`Store in maintenance: ${status.reason}`);
+}
+```
+
+<ParamField path="returns" type="object">
+  Store status object
+</ParamField>
+
+<Expandable title="Store Status Object Structure">
+  <ResponseField name="isOpen" type="boolean">
+    Whether the store is open
+  </ResponseField>
+  
+  <ResponseField name="temporarilyClosed" type="boolean">
+    Whether the store is temporarily closed
+  </ResponseField>
+  
+  <ResponseField name="maintenanceMode" type="boolean">
+    Whether the store is in maintenance mode
+  </ResponseField>
+  
+  <ResponseField name="reason" type="string">
+    Reason for closure (if applicable)
+  </ResponseField>
+</Expandable>
+
+---
+
+## Configuration
+
+### DEFAULT_SERVICE_HOURS
+
+Default service hours configuration object.
+
+```javascript
+import { DEFAULT_SERVICE_HOURS } from '@/config/serviceHours';
+```
+
+<Expandable title="Configuration Properties">
+  <ResponseField name="startHour" type="number" default={8}>
+    Service start hour (24-hour format)
+  </ResponseField>
+  
+  <ResponseField name="startMinute" type="number" default={30}>
+    Service start minute
+  </ResponseField>
+  
+  <ResponseField name="endHour" type="number" default={20}>
+    Service end hour (24-hour format)
+  </ResponseField>
+  
+  <ResponseField name="endMinute" type="number" default={30}>
+    Service end minute
+  </ResponseField>
+  
+  <ResponseField name="weekdaysEnabled" type="boolean" default={true}>
+    Whether service is available on weekdays (Monday-Friday)
+  </ResponseField>
+  
+  <ResponseField name="weekendsEnabled" type="boolean" default={true}>
+    Whether service is available on weekends (Saturday-Sunday)
+  </ResponseField>
+  
+  <ResponseField name="closedDates" type="string[]" default={[]}>
+    Array of dates when service is closed (YYYY-MM-DD format)
+  </ResponseField>
+  
+  <ResponseField name="testMode" type="boolean" default={false}>
+    If true, service is always considered open
+  </ResponseField>
+</Expandable>
+
+---
+
+## Usage Example
+
+```javascript
+import { 
+  isServiceOpen, 
+  getServiceHoursText,
+  getStoreStatus 
+} from '@/config/serviceHours';
+
+const OrderButton = () => {
+  const [canOrder, setCanOrder] = useState(false);
+  
+  useEffect(() => {
+    const checkAvailability = async () => {
+      const isOpen = await isServiceOpen();
+      const status = getStoreStatus();
+      
+      setCanOrder(isOpen && !status.maintenanceMode);
+    };
+    
+    checkAvailability();
+  }, []);
+  
+  return (
+    <button disabled={!canOrder}>
+      {canOrder ? 'Place Order' : `Closed - ${getServiceHoursText()}`}
+    </button>
+  );
+};
+```

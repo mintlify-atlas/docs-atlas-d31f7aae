@@ -1,0 +1,347 @@
+---
+title: 'ProductCard Component'
+description: 'Interactive product cards that display products and open modals for detailed product options'
+icon: 'box'
+---
+
+## Overview
+
+The `ProductCard` component displays individual products in a grid layout. When clicked, it opens a `ProductModal` to show detailed sub-product options. Each card features hover animations, accessibility support, and internationalization.
+
+## Component Location
+
+**File**: `src/App.js:157-220`
+
+The `ProductCard` is defined inline within the main App.js file and is used to render all products from the PRODUCTS data array.
+
+## Props
+
+<ParamField path="product" type="object" required>
+  Product object containing all product information
+  
+  <Expandable title="Product object structure">
+    <ParamField path="product.id" type="string" required>
+      Unique product identifier
+    </ParamField>
+    
+    <ParamField path="product.name" type="string" required>
+      Product display name (e.g., "Su", "Kola", "Gazoz")
+    </ParamField>
+    
+    <ParamField path="product.price" type="string" required>
+      Price display text (e.g., "Seçenekleri Görün" or "25 TL")
+    </ParamField>
+    
+    <ParamField path="product.image" type="string">
+      Product image URL or path
+    </ParamField>
+    
+    <ParamField path="product.imagePlaceholder" type="string">
+      Emoji or text placeholder when image is unavailable (e.g., "💧", "🥤")
+    </ParamField>
+    
+    <ParamField path="product.subProducts" type="array">
+      Array of sub-product objects displayed in the modal
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## State Management
+
+The component manages modal visibility with local state:
+
+```javascript
+const [isModalOpen, setIsModalOpen] = useState(false);
+```
+
+- **isModalOpen**: Boolean controlling ProductModal visibility
+- Opens on card click or Enter/Space key press
+- Closes via modal's onClose callback
+
+## Usage Example
+
+### Basic Implementation
+
+```javascript
+import React from 'react';
+import ProductCard from './components/ProductCard';
+
+function App() {
+  const product = {
+    id: '1',
+    name: 'Su',
+    price: 'Seçenekleri Görün',
+    image: '/images/water.png',
+    imagePlaceholder: '💧',
+    subProducts: [
+      { id: '11', name: '19L Damacana', price: '25 TL', image: '/images/damacana.png' },
+      { id: '12', name: '5L Pet', price: '15 TL', image: '/images/5l.png' }
+    ]
+  };
+
+  return (
+    <div className="products-grid">
+      <ProductCard product={product} />
+    </div>
+  );
+}
+```
+
+### Multiple Products
+
+```javascript
+import { PRODUCTS } from './data/products';
+
+function ProductsGrid() {
+  return (
+    <main className="main-content">
+      <div className="products-grid">
+        {PRODUCTS.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+    </main>
+  );
+}
+```
+
+## Component Behavior
+
+### Click Interaction
+
+The card opens the modal in several ways:
+
+1. **Mouse Click**: Direct click on the card
+2. **Keyboard**: Press Enter or Space when focused
+3. **Accessibility**: Proper ARIA labels for screen readers
+
+```javascript
+const handleCardClick = () => {
+  setIsModalOpen(true);
+};
+
+const handleCloseModal = () => {
+  setIsModalOpen(false);
+};
+```
+
+### Visual Feedback
+
+The card provides interactive visual feedback:
+
+- **Hover**: Scales up (105%) and adds shadow
+- **Active**: Scales down (95%) for tactile feedback
+- **Transition**: Smooth 300ms animation
+
+```jsx
+<div 
+  className="
+    product-card group relative cursor-pointer
+    transform transition-all duration-300
+    hover:scale-105 hover:shadow-2xl
+    active:scale-95
+  "
+>
+```
+
+## Accessibility Features
+
+### Keyboard Support
+
+```javascript
+onKeyDown={(e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    handleCardClick();
+  }
+}}
+```
+
+### ARIA Attributes
+
+```javascript
+role="button"
+tabIndex={0}
+aria-label={`${product.name} ürün seçeneklerini görüntüle`}
+```
+
+<Tip>
+The card is fully keyboard navigable. Users can tab to the card and press Enter or Space to open the modal, making it accessible to keyboard-only users.
+</Tip>
+
+## Internationalization
+
+The component supports language switching:
+
+```javascript
+import { t } from './config/language';
+
+<div className="product-price">
+  {product.price === "Seçenekleri Görün" ? t('seeOptions') : product.price}
+</div>
+```
+
+Supported translations:
+- **tr**: "Seçenekleri Görün"
+- **en**: "See Options"
+
+## Child Components
+
+### ProductImage
+
+Displays product image with lazy loading and fallback:
+
+```javascript
+<ProductImage 
+  src={product.image}
+  alt={`${product.name} ürün resmi`}
+  placeholder={product.imagePlaceholder}
+  className="image-placeholder"
+/>
+```
+
+See [ProductImage documentation](/components/product-image) for details.
+
+### ProductModal
+
+Rendered conditionally based on `isModalOpen` state:
+
+```javascript
+<ProductModal 
+  product={product}
+  isOpen={isModalOpen}
+  onClose={handleCloseModal}
+/>
+```
+
+See [ProductModal documentation](/components/product-modal) for details.
+
+## Styling
+
+### CSS Classes
+
+```css
+.product-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.product-image {
+  width: 100%;
+  height: 200px;
+  margin-bottom: 1rem;
+}
+
+.product-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.product-price {
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 1.125rem;
+}
+```
+
+### Responsive Design
+
+The cards are displayed in a responsive grid:
+
+```css
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+  padding: 2rem;
+}
+```
+
+## Complete Source Code
+
+```javascript src/App.js
+const ProductCard = ({ product }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleCardClick = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  return (
+    <>
+      <div 
+        onClick={handleCardClick}
+        className="
+          product-card group relative cursor-pointer
+          transform transition-all duration-300
+          hover:scale-105 hover:shadow-2xl
+          active:scale-95
+        "
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleCardClick();
+          }
+        }}
+        aria-label={`${product.name} ürün seçeneklerini görüntüle`}
+      >
+        <div className="product-image">
+          <ProductImage 
+            src={product.image}
+            alt={`${product.name} ürün resmi`}
+            placeholder={product.imagePlaceholder}
+            className="image-placeholder"
+          />
+        </div>
+        
+        <div className="product-name">{product.name}</div>
+        
+        <div className="product-price">
+          {product.price === "Seçenekleri Görün" ? t('seeOptions') : product.price}
+        </div>
+        
+        <div className="mt-4 text-center">
+          <div className="text-blue-600 font-semibold text-lg opacity-70 group-hover:opacity-100 transition-opacity duration-300">
+            {/* Optional: Click hint */}
+          </div>
+        </div>
+      </div>
+
+      <ProductModal 
+        product={product}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
+    </>
+  );
+};
+```
+
+## Best Practices
+
+<Tip>
+**Performance**: The ProductModal is only rendered when `isModalOpen` is true, preventing unnecessary DOM elements.
+</Tip>
+
+<Tip>
+**Accessibility**: Always include the `product.imagePlaceholder` for products, ensuring a fallback when images fail to load.
+</Tip>
+
+<Warning>
+Do not remove the `e.preventDefault()` from keyboard handlers - it prevents page scrolling when using Space key.
+</Warning>
+
+## Related Components
+
+- [ProductModal](/components/product-modal) - Modal opened by ProductCard
+- [ProductImage](/components/product-image) - Image component used in ProductCard
+- [CartContext](/components/cart-context) - Cart state accessed by child components

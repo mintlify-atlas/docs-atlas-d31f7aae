@@ -1,0 +1,369 @@
+---
+title: 'Damacana Time Restrictions'
+description: 'Configure time-based ordering restrictions for water jug (damacana) products'
+---
+
+## Overview
+
+Damacana (water jug) products have special time restrictions for ordering. This configuration allows you to set cutoff times when damacana orders are no longer accepted, with support for different hours on weekends.
+
+<Info>
+  Damacana products are identified by their ID pattern. By default, any product ID ending in `1` (like 11, 21, 31, 81) is considered a damacana.
+</Info>
+
+## Configuration File
+
+Damacana restrictions are defined in `src/config/damacanaLimits.js:2-30`.
+
+## Configuration Options
+
+### Weekday Settings
+
+<ParamField path="cutoffHour" type="number" default="19">
+  Hour when damacana orders stop being accepted (24-hour format)
+  
+  Orders placed after this time will be rejected until `startHour` the next day.
+</ParamField>
+
+<ParamField path="cutoffMinute" type="number" default="0">
+  Minute component of the cutoff time
+</ParamField>
+
+<ParamField path="startHour" type="number" default="8">
+  Hour when damacana orders start being accepted again (24-hour format)
+</ParamField>
+
+<ParamField path="startMinute" type="number" default="30">
+  Minute component of the start time
+</ParamField>
+
+### Weekend Settings
+
+<ParamField path="weekendEnabled" type="boolean" default="false">
+  Whether to use different cutoff times on weekends (Saturday-Sunday)
+  
+  If `false`, weekday times are used for all days.
+</ParamField>
+
+<ParamField path="weekendCutoffHour" type="number" default="18">
+  Weekend cutoff hour (only used if `weekendEnabled` is true)
+  
+  Default is 1 hour earlier than weekday cutoff.
+</ParamField>
+
+<ParamField path="weekendCutoffMinute" type="number" default="0">
+  Weekend cutoff minute
+</ParamField>
+
+<ParamField path="weekendStartHour" type="number" default="8">
+  Weekend start hour
+</ParamField>
+
+<ParamField path="weekendStartMinute" type="number" default="30">
+  Weekend start minute
+</ParamField>
+
+### System Settings
+
+<ParamField path="enabled" type="boolean" default="true">
+  Enable or disable damacana time restrictions entirely
+  
+  Set to `false` to allow damacana orders at any time.
+</ParamField>
+
+<ParamField path="testMode" type="boolean" default="false">
+  When enabled, time restrictions are bypassed
+  
+  <Warning>
+    Only use test mode in development. Never enable in production.
+  </Warning>
+</ParamField>
+
+<ParamField path="damacanaIdPattern" type="RegExp" default="/1$/">
+  Regular expression to identify damacana products by ID
+  
+  Default pattern `/1$/` matches IDs ending in 1: 11, 21, 31, 41, 51, 61, 71, 81
+</ParamField>
+
+<ParamField path="cutoffMessage" type="string" default="Damacana siparişleri {cutoffTime}'dan sonra alınmamaktadır">
+  Error message shown when orders are placed outside allowed hours
+  
+  Use `{cutoffTime}` and `{startTime}` placeholders.
+</ParamField>
+
+## Usage Examples
+
+### Check if Product is Damacana
+
+```javascript src/config/damacanaLimits.js
+import { isDamacana } from '@/config/damacanaLimits';
+
+// Check various product IDs
+isDamacana(11); // true - ends in 1
+isDamacana(21); // true - ends in 1
+isDamacana(81); // true - ends in 1
+isDamacana(12); // false - ends in 2
+isDamacana(35); // false - ends in 5
+```
+
+### Check if Damacana Orders are Allowed
+
+```javascript src/config/damacanaLimits.js
+import { isDamacanaOrderAllowed } from '@/config/damacanaLimits';
+
+const check = isDamacanaOrderAllowed();
+
+if (!check.isAllowed) {
+  console.log(check.message);
+  // "Damacana siparişleri 19:00'dan sonra alınmamaktadır"
+} else {
+  console.log('Damacana orders are accepted');
+}
+```
+
+### Validate Cart for Damacana Products
+
+```javascript src/config/damacanaLimits.js
+import { checkCartForDamacana } from '@/config/damacanaLimits';
+
+const cartItems = [
+  { id: 11, name: 'ABC Su Damacana 19L', quantity: 2 },
+  { id: 12, name: 'ABC Su Pet 0.5L', quantity: 5 },
+  { id: 21, name: 'XYZ Su Damacana 19L', quantity: 1 }
+];
+
+const result = checkCartForDamacana(cartItems);
+
+if (result.hasDamacana) {
+  console.log(`Found ${result.damacanaItems.length} damacana items`);
+  
+  if (!result.isAllowed) {
+    // Block checkout
+    alert(result.message);
+  }
+}
+```
+
+### Get Formatted Order Hours
+
+```javascript src/config/damacanaLimits.js
+import { getDamacanaOrderHoursText } from '@/config/damacanaLimits';
+
+const hours = getDamacanaOrderHoursText();
+console.log(hours);
+// "08:30 - 19:00" (if weekend mode disabled)
+// "Hafta içi: 08:30 - 19:00, Hafta sonu: 08:30 - 18:00" (if weekend mode enabled)
+```
+
+## Configuration Examples
+
+### Standard Weekday-Only Configuration
+
+```javascript src/config/damacanaLimits.js
+export const DAMACANA_LIMITS = {
+  cutoffHour: 19,
+  cutoffMinute: 0,
+  startHour: 8,
+  startMinute: 30,
+  enabled: true,
+  cutoffMessage: "Damacana siparişleri {cutoffTime}'dan sonra alınmamaktadır",
+  testMode: false,
+  damacanaIdPattern: /1$/,
+  weekendCutoffHour: 18,
+  weekendCutoffMinute: 0,
+  weekendStartHour: 8,
+  weekendStartMinute: 30,
+  weekendEnabled: false // Same hours every day
+};
+```
+
+### With Different Weekend Hours
+
+```javascript src/config/damacanaLimits.js
+export const DAMACANA_LIMITS = {
+  cutoffHour: 19,
+  cutoffMinute: 0,
+  startHour: 8,
+  startMinute: 30,
+  enabled: true,
+  cutoffMessage: "Damacana siparişleri {cutoffTime}'dan sonra alınmamaktadır",
+  testMode: false,
+  damacanaIdPattern: /1$/,
+  weekendCutoffHour: 17, // Weekend orders stop at 17:00
+  weekendCutoffMinute: 0,
+  weekendStartHour: 9, // Weekend orders start at 09:00
+  weekendStartMinute: 0,
+  weekendEnabled: true // Use different weekend hours
+};
+```
+
+### Custom Product Pattern
+
+```javascript src/config/damacanaLimits.js
+// Match damacana products by specific IDs
+export const DAMACANA_LIMITS = {
+  // ... other settings ...
+  damacanaIdPattern: /^(11|21|31|41)$/, // Only these specific IDs
+};
+
+// Or match by prefix
+export const DAMACANA_LIMITS = {
+  // ... other settings ...
+  damacanaIdPattern: /^DAM/, // IDs starting with "DAM"
+};
+```
+
+## How It Works
+
+The damacana restriction logic follows these steps (see `src/config/damacanaLimits.js:40-106`):
+
+<Steps>
+  <Step title="Check System Status">
+    If `enabled` is false or `testMode` is true, allow all orders immediately.
+  </Step>
+  
+  <Step title="Determine Time Settings">
+    Check if today is weekend (Saturday or Sunday). If `weekendEnabled` is true, use weekend-specific hours.
+  </Step>
+  
+  <Step title="Calculate Time Windows">
+    Convert cutoff and start times to minutes since midnight for comparison.
+  </Step>
+  
+  <Step title="Check Restricted Period">
+    Since `cutoffHour` (19) is greater than `startHour` (8), the restricted period spans midnight:
+    - Orders are **blocked** from 19:00 → 23:59 (same day)
+    - Orders are **blocked** from 00:00 → 08:30 (next day)
+    - Orders are **allowed** from 08:30 → 19:00
+  </Step>
+  
+  <Step title="Return Result">
+    Return whether order is allowed and appropriate error message if not.
+  </Step>
+</Steps>
+
+## Restricted Period Logic
+
+The key logic for overnight restrictions:
+
+```javascript src/config/damacanaLimits.js
+if (cutoffHour > startHour) {
+  // Overnight restriction: 19:00 → 08:30 next day is blocked
+  isInRestrictedPeriod = (currentTime >= cutoffTime) || (currentTime < startTime);
+} else {
+  // Same-day restriction (rare case)
+  isInRestrictedPeriod = (currentTime < cutoffTime) || (currentTime >= startTime);
+}
+```
+
+<Info>
+  With default settings (cutoff: 19:00, start: 08:30), customers **cannot** order damacana between 19:00 and 08:30 the next day. They **can** order between 08:30 and 19:00.
+</Info>
+
+## Return Value Structure
+
+Validation functions return this structure:
+
+```typescript
+{
+  isAllowed: boolean,     // true if order can be placed
+  message: string | null  // Error message if not allowed
+}
+
+// For cart check, includes additional info:
+{
+  hasDamacana: boolean,      // true if cart contains damacana products
+  damacanaItems: array,      // List of damacana items found
+  isAllowed: boolean,        // true if order can be placed
+  message: string | null     // Error message if not allowed
+}
+```
+
+## Integration Example
+
+```javascript
+import { checkCartForDamacana } from '@/config/damacanaLimits';
+import { useState, useEffect } from 'react';
+
+function CheckoutFlow({ cart }) {
+  const [damacanaError, setDamacanaError] = useState(null);
+  
+  useEffect(() => {
+    const result = checkCartForDamacana(cart.items);
+    
+    if (result.hasDamacana && !result.isAllowed) {
+      setDamacanaError(result.message);
+    } else {
+      setDamacanaError(null);
+    }
+  }, [cart]);
+  
+  const handleCheckout = () => {
+    if (damacanaError) {
+      alert('Sepetinizde damacana ürünleri var ancak şu anda sipariş verilemez.');
+      return;
+    }
+    
+    // Proceed with checkout
+  };
+  
+  return (
+    <div>
+      {damacanaError && (
+        <div className="alert alert-warning">
+          <strong>Uyarı:</strong> {damacanaError}
+          <br />
+          Damacana olmayan ürünlerinizi sipariş edebilir veya açılış saatini bekleyebilirsiniz.
+        </div>
+      )}
+      
+      <button 
+        onClick={handleCheckout}
+        disabled={!!damacanaError}
+      >
+        Siparişi Tamamla
+      </button>
+    </div>
+  );
+}
+```
+
+## Debug Logging
+
+The system includes extensive console logging for troubleshooting (see `src/config/damacanaLimits.js:35-105`):
+
+```javascript
+// Enable console logs in development
+isDamacana(11); 
+// Console: "Damacana Check: ID 11 -> DAMACANA"
+
+isDamacanaOrderAllowed();
+// Console: "Damacana Debug: Şu an saat 15:30 (930 dakika), Hafta içi"
+// Console: "Damacana Debug: Cutoff 19:00 (1140dk), Start 8:30 (510dk)"
+// Console: "Damacana Debug: SİPARİŞ İZİN VERİLDİ ✅"
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Match Your Logistics" icon="truck">
+    Set cutoff times based on your actual delivery capacity for water jugs.
+  </Card>
+  
+  <Card title="Clear Communication" icon="message">
+    Display damacana ordering hours prominently on product pages.
+  </Card>
+  
+  <Card title="Weekend Adjustments" icon="calendar">
+    Consider earlier cutoffs on weekends if you have reduced delivery staff.
+  </Card>
+  
+  <Card title="Test Product Pattern" icon="vial">
+    Verify your `damacanaIdPattern` matches all relevant products correctly.
+  </Card>
+</CardGroup>
+
+## Related Configuration
+
+- [Service Hours](/configuration/service-hours) - Overall store operating hours
+- [Order Limits](/configuration/order-limits) - Minimum and maximum order amounts

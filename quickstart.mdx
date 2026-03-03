@@ -1,80 +1,355 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start
+description: Get up and running with Bİ DOLU İÇECEK in minutes - run the dev server and place your first order
 ---
 
-## Get started in three steps
+# Quick Start Guide
 
-Get your documentation site running locally and make your first customization.
+Get your Bİ DOLU İÇECEK application running in minutes and learn the core workflows.
 
-### Step 1: Set up your local environment
+## Running the Development Server
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+<Steps>
+  <Step title="Start the Development Server">
+    From the project root directory, start the React development server:
+
+    ```bash
+    npm start
+    ```
+
+    The application will:
+    - Compile the React application
+    - Open your default browser at `http://localhost:3000`
+    - Enable hot-reloading for live code updates
+
+    <Note>
+      The development server runs on port 3000 by default. If this port is in use, React will prompt you to use an alternative port.
+    </Note>
+  </Step>
+
+  <Step title="Verify the Application is Running">
+    Once the server starts, you should see:
+
+    - **Header**: Company logo or "Bİ DOLU İÇECEK" text with phone number (0530 309 98 87)
+    - **Product Grid**: 9 main product categories displayed in cards
+    - **Scroll Indicators**: A "Scroll Down" indicator and progress bar
+    - **Social Media Icons**: Video, language toggle, and other links in the header
+
+    The console should show:
+    ```
+    Compiled successfully!
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    You can now view suapp in the browser.
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+      Local:            http://localhost:3000
+      On Your Network:  http://192.168.x.x:3000
+    ```
+  </Step>
+</Steps>
 
-### Step 2: Deploy your changes
+## Understanding the Application Structure
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+### Main Components
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+The application is organized into several key components:
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+<CodeGroup>
 
-### Step 3: Go live
+```javascript App.js
+// Main application structure from src/App.js
+import { CartProvider } from './context/CartContext';
+import { PRODUCTS } from './data/products';
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+function App() {
+  return (
+    <CartProvider>
+      <div className="App">
+        {/* Header with logo, phone, social media */}
+        <Header onVideoOpen={handleVideoOpen} />
+        
+        {/* Scroll down indicator */}
+        <ScrollDownIndicator />
+        
+        {/* Product catalog grid */}
+        <main className="main-content">
+          <div className="products-grid">
+            {PRODUCTS.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </main>
+        
+        {/* Floating order button */}
+        <OrderButton />
+        
+        {/* Welcome message (first visit) */}
+        <WelcomeMessage />
+      </div>
+    </CartProvider>
+  );
+}
+```
 
-## Next steps
+```javascript products.js
+// Product data structure from src/data/products.js
+export const PRODUCTS = [
+  {
+    id: 1,
+    name: "Fuska Su",
+    price: "Seçenekleri Görün",
+    image: "/images/fuska.jpeg",
+    imagePlaceholder: "🍓",
+    subProducts: [
+      {
+        id: 11,
+        name: "Fuska Su 19Lt Damacana",
+        price: "160 TL",
+        image: "/images/f19.png",
+        imagePlaceholder: "🏺"
+      },
+      // ... more sub-products
+    ]
+  },
+  // ... more main products
+];
+```
 
-Now that you have your docs running, explore these key features:
+</CodeGroup>
+
+### Key Features to Explore
 
 <CardGroup cols={2}>
+  <Card title="Product Modal" icon="window-restore">
+    Click any product card to open a modal showing all available sizes and variants
+  </Card>
+  <Card title="Cart System" icon="cart-shopping">
+    Add items to cart and watch the floating order button update with total price
+  </Card>
+  <Card title="Service Hours" icon="clock">
+    Order button automatically enables/disables based on service hours (8:30-20:30)
+  </Card>
+  <Card title="WhatsApp Integration" icon="whatsapp">
+    Complete orders are sent via WhatsApp with pre-filled messages
+  </Card>
+</CardGroup>
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+## Your First Order Workflow
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+<Steps>
+  <Step title="Browse Products">
+    Scroll through the product grid. You'll see 9 main categories:
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+    1. **Fuska Su** - Budget-friendly water options
+    2. **Pınar Su** - Premium water brand
+    3. **Buzdağı Su** - Natural spring water
+    4. **Sultan Su** - Single-use damacanas
+    5. **Uludağ İçecek** - Premium sodas and beverages
+    6. **Erikli Su** - Wide variety of formats
+    7. **Munzur Su** - Premium spring water
+    8. **Taşkesti Su** - Glass bottle options
+    9. **Bardak Su** - Convenient cup-sized portions
+  </Step>
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+  <Step title="Select a Product">
+    Click on any product card (e.g., "Pınar Su") to open the product modal.
 
+    The modal displays:
+    - Product image or emoji placeholder
+    - All available sizes (damacana, bottles, glass bottles)
+    - Individual prices for each variant
+    - Add to cart buttons
+
+    <Note>
+      Damacana products (IDs ending in 1, like 11, 21, 31) have time restrictions and can only be ordered between 13:00 and 19:00.
+    </Note>
+  </Step>
+
+  <Step title="Add to Cart">
+    In the product modal:
+
+    1. Click the **Add** button on any sub-product
+    2. The item appears in your cart
+    3. Use **+** and **-** buttons to adjust quantity
+    4. Click **Remove** to delete the item
+
+    ```javascript
+    // Cart updates are handled by CartContext
+    // Each action updates the total automatically
+    const addToCart = (product) => {
+      // Validates damacana time restrictions
+      // Checks service hours
+      // Updates cart state
+    };
+    ```
+  </Step>
+
+  <Step title="Review Cart Total">
+    The floating order button at the bottom right shows:
+
+    - Total number of items in cart
+    - Total price in TL
+    - Order eligibility status
+
+    **Order Button States:**
+
+    - **Green**: Ready to order (≥40 TL, service hours OK)
+    - **Grey**: Cannot order (reasons displayed)
+    - **Disabled**: Service hours closed or minimum not met
+
+    Minimum order amount: **40 TL**
+  </Step>
+
+  <Step title="Place Order via WhatsApp">
+    When the order button is green:
+
+    1. Click the order button
+    2. WhatsApp opens in a new tab
+    3. Pre-filled message includes:
+       - All items in your cart
+       - Quantities and prices
+       - Total amount
+    4. Send the message to complete your order
+
+    ```javascript
+    // WhatsApp message format
+    const message = `Merhaba, sipariş vermek istiyorum:
+    
+    - Pınar Su 19Lt Damacana x2 = 340 TL
+    - Fuska Su 24x0.5L Şişe x1 = 200 TL
+    
+    Toplam: 540 TL
+    
+    Adresim: `;
+    ```
+  </Step>
+</Steps>
+
+## Testing Key Features
+
+### Service Hours
+
+The application enforces service hours (8:30 - 20:30):
+
+```javascript
+// From src/config/serviceHours.js
+export const DEFAULT_SERVICE_HOURS = {
+  startHour: 8,
+  startMinute: 30,
+  endHour: 20,
+  endMinute: 30,
+  weekdaysEnabled: true,
+  weekendsEnabled: true,
+  testMode: false  // Set to true to bypass hours for testing
+};
+```
+
+**To test during development:**
+1. Open `src/config/serviceHours.js`
+2. Set `testMode: true`
+3. Save the file (hot reload will update)
+4. Order button will always be enabled
+
+### Damacana Time Restrictions
+
+Damacana products (19L jugs) have special ordering hours (13:00 - 19:00):
+
+```javascript
+// From src/config/damacanaLimits.js
+export const DAMACANA_LIMITS = {
+  cutoffHour: 19,      // Last order: 19:00
+  cutoffMinute: 0,
+  startHour: 13,       // First order: 13:00
+  startMinute: 0,
+  enabled: true,       // Set to false to disable
+  testMode: false      // Set to true to bypass restrictions
+};
+```
+
+### Minimum Order Amount
+
+Orders must meet the minimum threshold:
+
+```javascript
+// From src/config/orderLimits.js
+export const ORDER_LIMITS = {
+  minimumOrderAmount: 40,  // 40 TL minimum
+  minimumOrderEnabled: true
+};
+```
+
+## Development Tools
+
+### Available Scripts
+
+<CodeGroup>
+
+```bash Start Development Server
+npm start
+# Runs the app in development mode
+# Open http://localhost:3000 to view it
+```
+
+```bash Build for Production
+npm run build
+# Builds the app for production to the `build` folder
+# Optimizes the build for best performance
+```
+
+```bash Run Tests
+npm test
+# Launches the test runner in interactive watch mode
+```
+
+```bash Eject Configuration
+npm run eject
+# WARNING: This is a one-way operation!
+# Ejects from Create React App for full configuration control
+```
+
+</CodeGroup>
+
+### Hot Reload
+
+The development server supports hot module replacement (HMR):
+
+- Edit any `.js` or `.css` file
+- Save the file
+- Changes appear instantly without page reload
+- React state is preserved during updates
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Configure Service Hours"
+    icon="clock"
+    href="/configuration/service-hours"
+  >
+    Customize when customers can place orders
+  </Card>
+  <Card
+    title="Manage Products"
+    icon="box"
+    href="/guides/adding-products"
+  >
+    Add, edit, or remove products from the catalog
+  </Card>
+  <Card
+    title="WhatsApp Setup"
+    icon="whatsapp"
+    href="/configuration/whatsapp"
+  >
+    Configure your WhatsApp number and message templates
+  </Card>
+  <Card
+    title="Deploy to Production"
+    icon="rocket"
+    href="/guides/deployment"
+  >
+    Build and deploy your application to hosting platforms
+  </Card>
 </CardGroup>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  For detailed configuration options, refer to the README.md file in the source code or the configuration section of this documentation.
 </Note>

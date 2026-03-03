@@ -1,0 +1,377 @@
+---
+title: 'Shopping Cart'
+description: 'Shopping cart state management with React Context API'
+icon: 'cart-shopping'
+---
+
+The shopping cart system uses React Context API to manage cart state globally across the application, allowing users to add, remove, and manage product quantities.
+
+## Cart Context Overview
+
+The cart is implemented using React's Context API with a reducer pattern for state management.
+
+```javascript src/context/CartContext.js
+import React, { createContext, useContext, useReducer } from 'react';
+
+const CartContext = createContext();
+
+const initialState = {
+  items: []
+};
+```
+
+<Note>
+The cart context is defined in `src/context/CartContext.js` and should wrap your entire application.
+</Note>
+
+## Cart Provider Setup
+
+Wrap your application with the `CartProvider` to enable cart functionality:
+
+```javascript App.js
+import { CartProvider } from './context/CartContext';
+
+function App() {
+  return (
+    <CartProvider>
+      {/* Your app components */}
+    </CartProvider>
+  );
+}
+```
+
+## Cart State Management
+
+### Cart Reducer
+
+The cart uses a reducer to handle state updates:
+
+```javascript src/context/CartContext.js
+const cartReducer = (state, action) => {
+  switch (action.type) {
+    case 'ADD_ITEM':
+      const existingItem = state.items.find(item => item.id === action.payload.id);
+      if (existingItem) {
+        return {
+          ...state,
+          items: state.items.map(item =>
+            item.id === action.payload.id
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          )
+        };
+      } else {
+        return {
+          ...state,
+          items: [...state.items, { ...action.payload, quantity: 1 }]
+        };
+      }
+
+    case 'REMOVE_ITEM':
+      const item = state.items.find(item => item.id === action.payload.id);
+      if (item && item.quantity > 1) {
+        return {
+          ...state,
+          items: state.items.map(item =>
+            item.id === action.payload.id
+              ? { ...item, quantity: item.quantity - 1 }
+              : item
+          )
+        };
+      } else {
+        return {
+          ...state,
+          items: state.items.filter(item => item.id !== action.payload.id)
+        };
+      }
+
+    case 'CLEAR_CART':
+      return {
+        ...state,
+        items: []
+      };
+
+    default:
+      return state;
+  }
+};
+```
+
+<Accordion title="Reducer Action Types">
+
+| Action | Description | Behavior |
+|--------|-------------|----------|
+| `ADD_ITEM` | Add product to cart | Increments quantity if exists, otherwise adds new item with quantity 1 |
+| `REMOVE_ITEM` | Remove product from cart | Decrements quantity, removes completely if quantity reaches 0 |
+| `CLEAR_CART` | Empty entire cart | Resets items array to empty |
+
+</Accordion>
+
+## Cart Operations
+
+### Adding Items
+
+Add a product to the cart or increment its quantity:
+
+```javascript src/context/CartContext.js
+const addItem = (item) => {
+  dispatch({ type: 'ADD_ITEM', payload: item });
+};
+```
+
+**Usage Example:**
+```javascript
+import { useCart } from '../context/CartContext';
+
+function ProductCard({ product }) {
+  const { addItem } = useCart();
+  
+  return (
+    <button onClick={() => addItem(product)}>
+      Add to Cart
+    </button>
+  );
+}
+```
+
+### Removing Items
+
+Decrement quantity or remove item entirely:
+
+```javascript src/context/CartContext.js
+const removeItem = (item) => {
+  dispatch({ type: 'REMOVE_ITEM', payload: item });
+};
+```
+
+**Usage Example:**
+```javascript
+const { removeItem } = useCart();
+
+<button onClick={() => removeItem(product)}>
+  Remove
+</button>
+```
+
+### Clearing Cart
+
+Remove all items from the cart:
+
+```javascript src/context/CartContext.js
+const clearCart = () => {
+  dispatch({ type: 'CLEAR_CART' });
+};
+```
+
+<Warning>
+`clearCart()` is automatically called after a successful WhatsApp order to reset the cart.
+</Warning>
+
+## Cart Utilities
+
+### Get Item Quantity
+
+Check the quantity of a specific item in the cart:
+
+```javascript src/context/CartContext.js
+const getItemQuantity = (itemId) => {
+  const item = state.items.find(item => item.id === itemId);
+  return item ? item.quantity : 0;
+};
+```
+
+### Get Total Items
+
+Calculate total number of items across all products:
+
+```javascript src/context/CartContext.js
+const getTotalItems = () => {
+  return state.items.reduce((total, item) => total + item.quantity, 0);
+};
+```
+
+**Example Output:**
+- 2x Fuska Su 19Lt = 2 items
+- 1x Pınar Su 24x0.5L = 1 item
+- **Total: 3 items**
+
+### Get Total Price
+
+Calculate the total cart value:
+
+```javascript src/context/CartContext.js
+const getTotalPrice = () => {
+  return state.items.reduce((total, item) => {
+    // Extract number from price string (e.g., "25 TL" -> 25)
+    const price = parseFloat(item.price.replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
+    return total + (price * item.quantity);
+  }, 0);
+};
+```
+
+<Tip>
+The price parser handles various formats including "160 TL", "160TL", and "160,00 TL".
+</Tip>
+
+### Generate WhatsApp Message
+
+Create a formatted message for WhatsApp orders:
+
+```javascript src/context/CartContext.js
+const getCartMessage = () => {
+  if (state.items.length === 0) return '';
+  
+  const itemMessages = state.items.map(item => 
+    `${item.quantity} adet - ${item.name}`
+  );
+  
+  return `${itemMessages.join('\n')}\nsipariş etmek istiyorum.`;
+};
+```
+
+**Example Output:**
+```
+2 adet - Fuska Su 19Lt Damacana
+1 adet - Pınar Su 24x0.5L Şişe
+sipariş etmek istiyorum.
+```
+
+## useCart Hook
+
+Access cart functionality in any component:
+
+```javascript src/context/CartContext.js
+export const useCart = () => {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
+  return context;
+};
+```
+
+### Available Properties and Methods
+
+<CodeGroup>
+
+```javascript State
+const { items } = useCart();
+// Array of cart items with quantities
+```
+
+```javascript Actions
+const { addItem, removeItem, clearCart } = useCart();
+```
+
+```javascript Utilities
+const { 
+  getItemQuantity,
+  getTotalItems,
+  getTotalPrice,
+  getCartMessage 
+} = useCart();
+```
+
+</CodeGroup>
+
+## Complete Usage Example
+
+Here's a complete example of a cart summary component:
+
+```javascript CartSummary.js
+import { useCart } from '../context/CartContext';
+
+function CartSummary() {
+  const { 
+    items, 
+    getTotalItems, 
+    getTotalPrice,
+    addItem,
+    removeItem,
+    clearCart
+  } = useCart();
+
+  const totalItems = getTotalItems();
+  const totalPrice = getTotalPrice();
+
+  return (
+    <div className="cart-summary">
+      <h2>Cart ({totalItems} items)</h2>
+      
+      {items.map(item => (
+        <div key={item.id} className="cart-item">
+          <span>{item.name}</span>
+          <div className="quantity-controls">
+            <button onClick={() => removeItem(item)}>−</button>
+            <span>{item.quantity}</span>
+            <button onClick={() => addItem(item)}>+</button>
+          </div>
+          <span>{item.price}</span>
+        </div>
+      ))}
+      
+      <div className="cart-total">
+        <strong>Total: {totalPrice.toFixed(2)} TL</strong>
+      </div>
+      
+      <button onClick={clearCart}>Clear Cart</button>
+    </div>
+  );
+}
+```
+
+## Cart Item Structure
+
+Each item in the cart has the following structure:
+
+```javascript
+{
+  id: 11,
+  name: "Fuska Su 19Lt Damacana",
+  price: "160 TL",
+  image: "/images/f19.png",
+  imagePlaceholder: "🏺",
+  whatsappMessage: "Merhaba Sultan Su 19L damacana sipariş etmek istiyorum. Adresim: ",
+  quantity: 2  // Added by cart context
+}
+```
+
+<Note>
+The `quantity` field is added by the cart context and is not part of the original product data.
+</Note>
+
+## Best Practices
+
+<CardGroup cols={2}>
+
+<Card title="Single Source of Truth" icon="database">
+Always use the cart context for cart data. Never maintain separate cart state in individual components.
+</Card>
+
+<Card title="Error Boundaries" icon="shield">
+Wrap cart-dependent components in error boundaries to handle potential context errors gracefully.
+</Card>
+
+<Card title="Memoization" icon="bolt">
+For performance, memoize cart calculations in components that don't need real-time updates.
+</Card>
+
+<Card title="Persistence" icon="save">
+Consider adding localStorage persistence to maintain cart data across page refreshes.
+</Card>
+
+</CardGroup>
+
+## Related Documentation
+
+<CardGroup cols={2}>
+
+<Card title="Product Catalog" icon="box-open" href="/features/product-catalog">
+Learn about the product data structure added to the cart
+</Card>
+
+<Card title="WhatsApp Ordering" icon="whatsapp" href="/features/whatsapp-ordering">
+See how cart data is formatted for WhatsApp orders
+</Card>
+
+</CardGroup>
