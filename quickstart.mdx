@@ -160,7 +160,7 @@ export const PRODUCTS = [
     - Add to cart buttons
 
     <Note>
-      Damacana products (IDs ending in 1, like 11, 21, 31) have time restrictions and can only be ordered between 13:00 and 19:00.
+      Damacana products (IDs ending in 1, like 11, 21, 31) have time restrictions and can only be ordered between 8:30 and 19:00.
     </Note>
   </Step>
 
@@ -192,11 +192,11 @@ export const PRODUCTS = [
 
     **Order Button States:**
 
-    - **Green**: Ready to order (≥40 TL, service hours OK)
+    - **Green**: Ready to order (≥400 TL, service hours OK)
     - **Grey**: Cannot order (reasons displayed)
     - **Disabled**: Service hours closed or minimum not met
 
-    Minimum order amount: **40 TL**
+    Minimum order amount: **400 TL**
   </Step>
 
   <Step title="Place Order via WhatsApp">
@@ -251,15 +251,15 @@ export const DEFAULT_SERVICE_HOURS = {
 
 ### Damacana Time Restrictions
 
-Damacana products (19L jugs) have special ordering hours (13:00 - 19:00):
+Damacana products (19L jugs) have special ordering hours (8:30 - 19:00):
 
 ```javascript
 // From src/config/damacanaLimits.js
 export const DAMACANA_LIMITS = {
   cutoffHour: 19,      // Last order: 19:00
   cutoffMinute: 0,
-  startHour: 13,       // First order: 13:00
-  startMinute: 0,
+  startHour: 8,        // First order: 8:30
+  startMinute: 30,
   enabled: true,       // Set to false to disable
   testMode: false      // Set to true to bypass restrictions
 };
@@ -272,7 +272,7 @@ Orders must meet the minimum threshold:
 ```javascript
 // From src/config/orderLimits.js
 export const ORDER_LIMITS = {
-  minimumOrderAmount: 40,  // 40 TL minimum
+  minimumOrderAmount: 400,  // 400 TL minimum
   minimumOrderEnabled: true
 };
 ```
